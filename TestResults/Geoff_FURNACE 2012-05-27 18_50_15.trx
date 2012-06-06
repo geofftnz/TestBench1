@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="1d4c3a13-1023-43e2-bc2c-5b199cea6cef" name="Geoff@FURNACE 2012-05-27 18:50:15" runUser="Furnace\Geoff" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestSettings name="Local" id="65fac57b-d0a1-498e-a59a-ad06f956ef96">
+    <Description>These are default test settings for a local test run.</Description>
+    <Deployment enabled="false" runDeploymentRoot="Geoff_FURNACE 2012-05-27 18_50_15">
+      <DeploymentItem filename="Q:\code\TestBench1\TerrainEngine\bin\x86\Release\TerrainEngine.dll" />
+    </Deployment>
+    <Execution>
+      <TestTypeSpecific />
+      <AgentRule name="Execution Agents">
+      </AgentRule>
+    </Execution>
+  </TestSettings>
+  <Times creation="2012-05-27T18:50:15.2355065+12:00" queuing="2012-05-27T18:50:16.1915611+12:00" start="2012-05-27T18:50:16.2565649+12:00" finish="2012-05-27T18:50:26.2021337+12:00" />
+  <ResultSummary outcome="Error">
+    <Counters total="4" executed="3" passed="2" error="0" failed="0" timeout="0" aborted="1" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="1" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <RunInfos>
+      <RunInfo computerName="FURNACE" outcome="Error" timestamp="2012-05-27T18:50:26.2001336+12:00">
+        <Text>Test host process exited unexpectedly.</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+  <TestDefinitions>
+    <UnitTest name="setdata_sets_texcoords_correctly_for_offset_patch" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="6d2083c5-12f9-c6c1-9a4c-12ec6f0c890c">
+      <Execution id="5cb01ccd-df2b-4fc8-bf0e-bf5fd72797b1" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_texcoords_correctly_for_offset_patch" />
+    </UnitTest>
+    <UnitTest name="setdata_sets_texcoords_correctly_for_top_left_patch" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="a1bf9ddb-d054-8ed3-b9ea-68c7bd2ba663">
+      <Execution id="3e22ddaa-7e81-4a00-ab0a-b145608aa54f" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_texcoords_correctly_for_top_left_patch" />
+    </UnitTest>
+    <UnitTest name="setdata_sets_data_from_the_bottom_right_of_a_larger_array" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="0c13a24b-5bf6-482a-824b-34da575d93dd">
+      <Execution id="62dabbd1-f726-4665-8a57-8b576cac2c38" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_data_from_the_bottom_right_of_a_larger_array" />
+    </UnitTest>
+    <UnitTest name="setdata_sets_data_from_the_top_left_of_a_larger_array" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="02ae13ab-f2ea-c853-c985-31229f4c98b6">
+      <Execution id="4408d712-60b8-4e48-99c5-022995635b7a" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_data_from_the_top_left_of_a_larger_array" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <TestEntries>
+    <TestEntry testId="02ae13ab-f2ea-c853-c985-31229f4c98b6" executionId="4408d712-60b8-4e48-99c5-022995635b7a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0c13a24b-5bf6-482a-824b-34da575d93dd" executionId="62dabbd1-f726-4665-8a57-8b576cac2c38" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6d2083c5-12f9-c6c1-9a4c-12ec6f0c890c" executionId="5cb01ccd-df2b-4fc8-bf0e-bf5fd72797b1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a1bf9ddb-d054-8ed3-b9ea-68c7bd2ba663" executionId="3e22ddaa-7e81-4a00-ab0a-b145608aa54f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <Results>
+    <UnitTestResult executionId="4408d712-60b8-4e48-99c5-022995635b7a" testId="02ae13ab-f2ea-c853-c985-31229f4c98b6" testName="setdata_sets_data_from_the_top_left_of_a_larger_array" computerName="FURNACE" duration="00:00:00.1416632" startTime="2012-05-27T18:50:16.3325692+12:00" endTime="2012-05-27T18:50:17.2916241+12:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4408d712-60b8-4e48-99c5-022995635b7a">
+    </UnitTestResult>
+    <UnitTestResult executionId="62dabbd1-f726-4665-8a57-8b576cac2c38" testId="0c13a24b-5bf6-482a-824b-34da575d93dd" testName="setdata_sets_data_from_the_bottom_right_of_a_larger_array" computerName="FURNACE" duration="00:00:00.0008222" startTime="2012-05-27T18:50:17.3046248+12:00" endTime="2012-05-27T18:50:17.3196257+12:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="62dabbd1-f726-4665-8a57-8b576cac2c38">
+    </UnitTestResult>
+    <UnitTestResult executionId="5cb01ccd-df2b-4fc8-bf0e-bf5fd72797b1" testId="6d2083c5-12f9-c6c1-9a4c-12ec6f0c890c" testName="setdata_sets_texcoords_correctly_for_offset_patch" computerName="FURNACE" duration="00:00:08.8705073" startTime="2012-05-27T18:50:17.3316264+12:00" endTime="2012-05-27T18:50:26.2021337+12:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Aborted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5cb01ccd-df2b-4fc8-bf0e-bf5fd72797b1">
+    </UnitTestResult>
+    <UnitTestResult executionId="3e22ddaa-7e81-4a00-ab0a-b145608aa54f" testId="a1bf9ddb-d054-8ed3-b9ea-68c7bd2ba663" testName="setdata_sets_texcoords_correctly_for_top_left_patch" computerName="FURNACE" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="NotExecuted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3e22ddaa-7e81-4a00-ab0a-b145608aa54f">
+    </UnitTestResult>
+  </Results>
+</TestRun>

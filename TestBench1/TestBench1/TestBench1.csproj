@@ -122,13 +122,18 @@
       <Project>{88BBD512-A699-4A8D-A789-B6FC76FC5C57}</Project>
       <Name>TerrainEngine</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\TerrainGeneration\TerrainGeneration.csproj">
+      <Project>{82273D50-5BD2-4F6A-9BBA-81EFBCF85E25}</Project>
+      <Name>TerrainGeneration</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Utils\Utils.csproj">
       <Project>{E7702A19-0578-47E3-B3DB-1853B8C57F6A}</Project>
       <Name>Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\TestBench1Content\TestBench1Content.contentproj">
-      <Name>TestBench1Content</Name>
+      <Name>TestBench1Content %28Content%29</Name>
       <XnaReferenceType>Content</XnaReferenceType>
+      <Project>{1AD3730D-E7A0-40D3-8C57-BBB8596D6937}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

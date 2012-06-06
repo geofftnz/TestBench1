@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="a6e7339a-566c-4ec8-a151-5a77760654ad" name="Geoff@FURNACE 2012-05-27 18:43:04" runUser="Furnace\Geoff" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestSettings name="Local" id="65fac57b-d0a1-498e-a59a-ad06f956ef96">
+    <Description>These are default test settings for a local test run.</Description>
+    <Deployment enabled="false" runDeploymentRoot="Geoff_FURNACE 2012-05-27 18_43_04">
+      <DeploymentItem filename="Q:\code\TestBench1\TerrainEngine\bin\x86\Release\TerrainEngine.dll" />
+    </Deployment>
+    <Execution>
+      <TestTypeSpecific />
+      <AgentRule name="Execution Agents">
+      </AgentRule>
+    </Execution>
+  </TestSettings>
+  <Times creation="2012-05-27T18:43:04.2891098+12:00" queuing="2012-05-27T18:43:05.1801608+12:00" start="2012-05-27T18:43:05.2421643+12:00" finish="2012-05-27T18:43:06.2602225+12:00" />
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" error="0" failed="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+  </ResultSummary>
+  <TestDefinitions>
+    <UnitTest name="setdata_sets_data_from_the_top_left_of_a_larger_array" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="02ae13ab-f2ea-c853-c985-31229f4c98b6">
+      <Execution id="9bb7364a-2db0-48e1-92c1-aa34abbe4732" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_data_from_the_top_left_of_a_larger_array" />
+    </UnitTest>
+    <UnitTest name="setdata_sets_data_from_the_bottom_right_of_a_larger_array" storage="q:\code\testbench1\terraintest\bin\release\terraintest.dll" id="0c13a24b-5bf6-482a-824b-34da575d93dd">
+      <Execution id="d7c1dcae-7ff4-4993-bd6d-8e801f4e4306" />
+      <TestMethod codeBase="Q:/code/TestBench1/TerrainTest/bin/Release/TerrainTest.DLL" adapterTypeName="Microsoft.VisualStudio.TestTools.TestTypes.Unit.UnitTestAdapter, Microsoft.VisualStudio.QualityTools.Tips.UnitTest.Adapter, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" className="TerrainTest.PatchTest, TerrainTest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" name="setdata_sets_data_from_the_bottom_right_of_a_larger_array" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <TestEntries>
+    <TestEntry testId="02ae13ab-f2ea-c853-c985-31229f4c98b6" executionId="9bb7364a-2db0-48e1-92c1-aa34abbe4732" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0c13a24b-5bf6-482a-824b-34da575d93dd" executionId="d7c1dcae-7ff4-4993-bd6d-8e801f4e4306" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <Results>
+    <UnitTestResult executionId="9bb7364a-2db0-48e1-92c1-aa34abbe4732" testId="02ae13ab-f2ea-c853-c985-31229f4c98b6" testName="setdata_sets_data_from_the_top_left_of_a_larger_array" computerName="FURNACE" duration="00:00:00.1233490" startTime="2012-05-27T18:43:05.2871669+12:00" endTime="2012-05-27T18:43:06.1552165+12:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9bb7364a-2db0-48e1-92c1-aa34abbe4732">
+    </UnitTestResult>
+    <UnitTestResult executionId="d7c1dcae-7ff4-4993-bd6d-8e801f4e4306" testId="0c13a24b-5bf6-482a-824b-34da575d93dd" testName="setdata_sets_data_from_the_bottom_right_of_a_larger_array" computerName="FURNACE" duration="00:00:00.0008076" startTime="2012-05-27T18:43:06.1642170+12:00" endTime="2012-05-27T18:43:06.1732176+12:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d7c1dcae-7ff4-4993-bd6d-8e801f4e4306">
+    </UnitTestResult>
+  </Results>
+</TestRun>

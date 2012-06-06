@@ -7,7 +7,7 @@
       <Importer>EffectImporter</Importer>
       <Processor>EffectProcessor</Processor>
       <Options>None</Options>
-      <Output>\\nas\repos\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\Effect1.xnb</Output>
+      <Output>Q:\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\Effect1.xnb</Output>
       <Time>2011-07-24T16:58:08.9840732+12:00</Time>
     </Item>
     <Item>
@@ -16,7 +16,7 @@
       <Importer>EffectImporter</Importer>
       <Processor>EffectProcessor</Processor>
       <Options>None</Options>
-      <Output>\\nas\repos\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\TerrainTile.xnb</Output>
+      <Output>Q:\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\TerrainTile.xnb</Output>
       <Time>2011-10-27T19:58:24.6066628+13:00</Time>
     </Item>
     <Item>
@@ -25,7 +25,7 @@
       <Importer>FontDescriptionImporter</Importer>
       <Processor>FontDescriptionProcessor</Processor>
       <Options>None</Options>
-      <Output>\\nas\repos\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\statusFont.xnb</Output>
+      <Output>Q:\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\statusFont.xnb</Output>
       <Time>2011-09-11T15:41:38.7155512+12:00</Time>
     </Item>
     <BuildSuccessful>true</BuildSuccessful>
@@ -34,10 +34,10 @@
       <TargetProfile>HiDef</TargetProfile>
       <BuildConfiguration>Debug</BuildConfiguration>
       <CompressContent>false</CompressContent>
-      <RootDirectory>\\nas\repos\code\TestBench1\TestBench1\TestBench1Content\</RootDirectory>
-      <LoggerRootDirectory>\\nas\repos\code\TestBench1\TestBench1\TestBench1\</LoggerRootDirectory>
-      <IntermediateDirectory>\\nas\repos\code\TestBench1\TestBench1\TestBench1Content\obj\x86\Debug\</IntermediateDirectory>
-      <OutputDirectory>\\nas\repos\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\</OutputDirectory>
+      <RootDirectory>Q:\code\TestBench1\TestBench1\TestBench1Content\</RootDirectory>
+      <LoggerRootDirectory>Q:\code\TestBench1\TestBench1\TestBench1\</LoggerRootDirectory>
+      <IntermediateDirectory>Q:\code\TestBench1\TestBench1\TestBench1Content\obj\x86\Debug\</IntermediateDirectory>
+      <OutputDirectory>Q:\code\TestBench1\TestBench1\TestBench1\bin\x86\Debug\Content\</OutputDirectory>
     </Settings>
     <Assemblies>
       <Assembly>

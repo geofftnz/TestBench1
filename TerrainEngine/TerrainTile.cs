@@ -323,23 +323,20 @@ namespace TerrainEngine
             double ry = r.NextDouble();
 
             Parallel.For(0, this.Height,
-                () => { return new SimplexNoise(); },
-                (y, tls, sn) =>
+                (y) =>
                 {
                     int i = y * this.Width;
                     for (int x = 0; x < this.Width; x++)
                     {
                         this.Data[i] = 0f;
 
-                        for (int j = 1; j < 8; j++)
+                        for (int j = 1; j < 5; j++)
                         {
-                            this.Data[i] += sn.noise((float)rx + x * 0.003f * (1 << j), (float)ry+y * 0.003f * (1 << j), j * 3.3f) * (1.0f / ((1 << j) + 1));
+                            this.Data[i] += SimplexNoise.noise((float)rx + x * 0.003f * (1 << j), (float)ry+y * 0.003f * (1 << j), j * 3.3f) * (1.0f / ((1 << j) + 1));
                         }
                         i++;
                     }
-                    return sn;
-                },
-            (sn) => { }
+                }
             );
         }
 
@@ -386,14 +383,6 @@ namespace TerrainEngine
 
         private void SetupBoundingBox()
         {
-            // find min/max xyz
-            //float minx = Vertices.Select(v => v.Position.X).Min();
-            //float miny = Vertices.Select(v => v.Position.Y).Min();
-            //float minz = Vertices.Select(v => v.Position.Z).Min();
-            //float maxx = Vertices.Select(v => v.Position.X).Max();
-            //float maxy = Vertices.Select(v => v.Position.Y).Max();
-            //float maxz = Vertices.Select(v => v.Position.Z).Max();
-
             float minx = 0f;
             float maxx = 1f;
 
@@ -405,12 +394,10 @@ namespace TerrainEngine
 
             BoundingBoxLowerCorner = new Vector3(minx, MinHeight, minz);
             BoundingBoxUpperCorner = new Vector3(maxx, MaxHeight, maxz);
-
             
             for (int i = 0; i < 8; i++)
             {
                 this.BoundingBoxRenderVertex[i].Position.X = (i & 0x02) == 0 ? ((i & 0x01) == 0 ? minx : maxx) : ((i & 0x01) == 0 ? maxx : minx);
-                //this.BoundingBoxRenderVertex[i].Position.Y = ((i & 0x04) == 0 ? miny : maxy);
                 this.BoundingBoxRenderVertex[i].Position.Y = ((i & 0x04) == 0 ? MinHeight : MaxHeight);
                 this.BoundingBoxRenderVertex[i].Position.Z = (i & 0x02) == 0 ? minz : maxz;
 
@@ -418,13 +405,9 @@ namespace TerrainEngine
 
                 this.BoundingBoxVertex[i].Position = this.BoundingBoxRenderVertex[i].Position;
                 
-                //this.BoundingBoxVertex[i].BoxCoord = this.BoundingBoxRenderVertex[i].Position; 
                 this.BoundingBoxVertex[i].BoxCoord.X = this.BoundingBoxVertex[i].Position.X;
                 this.BoundingBoxVertex[i].BoxCoord.Y = this.BoundingBoxVertex[i].Position.Y;
                 this.BoundingBoxVertex[i].BoxCoord.Z = this.BoundingBoxVertex[i].Position.Z;
-
-                //Console.WriteLine(miny);
-                //Console.WriteLine(maxy);
             }
 
             int j = 0;

@@ -96,21 +96,18 @@ namespace TerrainEngine
             double ry = r.NextDouble();
 
             Parallel.For(0, this.Height,
-                () => { return new SimplexNoise(); },
-                (y, tls, sn) =>
+                (y) =>
                 {
                     int i = y * this.Width;
                     for (int x = 0; x < this.Width; x++)
                     {
                         for (int j = 1; j < octaves; j++)
                         {
-                            this.Data[i].h += sn.noise((float)rx + x * scale * (1 << j), (float)ry + y * scale * (1 << j), j * 3.3f) * (amplitude / ((1 << j) + 1));
+                            this.Data[i].h += SimplexNoise.noise((float)rx + x * scale * (1 << j), (float)ry + y * scale * (1 << j), j * 3.3f) * (amplitude / ((1 << j) + 1));
                         }
                         i++;
                     }
-                    return sn;
-                },
-            (sn) => { }
+                }
             );
         }
 
@@ -134,7 +131,7 @@ namespace TerrainEngine
         {
             this.Clear(0.0f);
             this.AddSimplexNoise(4, 0.0002f, 5.0f);
-            this.AddSimplexNoise(8, 0.005f, 0.5f);
+            this.AddSimplexNoise(4, 0.005f, 0.2f);
             //this.AddRamp();
         }
 

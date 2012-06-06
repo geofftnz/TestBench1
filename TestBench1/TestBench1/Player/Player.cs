@@ -108,7 +108,7 @@ namespace TestBench1
             this.Position = new Vector3(0f, 0f, 0f);
             this.AngleUpDown = (float)Math.PI * 0.5f;
             this.AngleLeftRight = 0f;
-            this.EyeHeight = 40f / 256f;
+            this.EyeHeight = 5f / 256f;
 
             this.currMouse = Mouse.GetState();
             this.currKeyboard = Keyboard.GetState();

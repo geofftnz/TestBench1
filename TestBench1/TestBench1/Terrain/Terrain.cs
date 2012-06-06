@@ -45,8 +45,7 @@ namespace TestBench1.Terrain
         private void SetupTestData()
         {
             Parallel.For(0, this.Height,
-                () => { return new SimplexNoise(); },
-                (y, tls, sn) =>
+                (y) =>
                 {
                     int i = y * this.Width;
                     for (int x = 0; x < this.Width; x++)
@@ -55,14 +54,12 @@ namespace TestBench1.Terrain
 
                         for (int j = 1; j < 6; j++)
                         {
-                            this.Data[i] += sn.noise(x * 0.003f * (1 << j), y * 0.003f * (1 << j), j * 3.3f) * (1.0f / ((1 << j) + 1));
+                            this.Data[i] += SimplexNoise.noise(x * 0.003f * (1 << j), y * 0.003f * (1 << j), j * 3.3f) * (1.0f / ((1 << j) + 1));
                         }
                         i++;
                     }
-                    return sn;
-                },
-            (sn) => { }
-            );
+                  
+                });
         }
 
 

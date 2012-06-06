@@ -13,7 +13,7 @@ namespace Utils
     /// 
     /// NOT THREADSAFE
     /// </summary>
-    public class SimplexNoise
+    public class SimplexNoiseThreadUnsafe
     {
         private const float onethird = 0.333333333f;
         private const float onesixth = 0.166666667f;
@@ -23,7 +23,7 @@ namespace Utils
         private int i, j, k;
         private int[] A = { 0, 0, 0 };
 
-        public SimplexNoise()
+        public SimplexNoiseThreadUnsafe()
         {
 
         }

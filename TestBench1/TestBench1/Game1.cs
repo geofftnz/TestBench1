@@ -75,7 +75,7 @@ namespace TestBench1
         protected override void Initialize()
         {
 
-            this.terrain = new TerrainEngine.Terrain(1024, 1024);
+            this.terrain = new TerrainEngine.Terrain(2048, 2048);
             this.terrain.SetupTestTerrain();
             this.terrain.LoadTiles();
 

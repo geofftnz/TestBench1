@@ -12,6 +12,7 @@ namespace Utils
         private Stopwatch sw = new Stopwatch();
         private long[] tickBuffer = new long[BUFLEN];
         private int bufferPos = 0;
+        private long frameCount = 0;
 
         public double FPS
         {
@@ -26,6 +27,14 @@ namespace Utils
             }
         }
 
+        public long Frames
+        {
+            get
+            {
+                return frameCount;
+            }
+        }
+
 
         public FrameCounter()
         {
@@ -33,6 +42,7 @@ namespace Utils
 
         public void Start()
         {
+            frameCount = 0;
             sw.Start();
 
             long ticks = sw.ElapsedTicks;
@@ -51,6 +61,7 @@ namespace Utils
 
         public void Frame()
         {
+            frameCount++;
             bufferPos++;
             bufferPos %= BUFLEN;
             tickBuffer[bufferPos] = sw.ElapsedTicks;

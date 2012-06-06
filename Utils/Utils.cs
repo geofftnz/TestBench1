@@ -27,5 +27,19 @@ namespace Utils
             return new Color(theta,rho,0f);
         }
 
+        public static float Wrap(this float x, float max) 
+        {
+            while (x < 0f) x += max;
+            while (x >= max) x -= max;
+            return x;
+        }
+
+        public static int Wrap(this int x, int max)
+        {
+            while (x < 0) x += max;
+            while (x >= max) x -= max;
+            return x;
+        }
+
     }
 }
