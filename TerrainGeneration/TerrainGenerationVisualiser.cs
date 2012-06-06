@@ -141,9 +141,10 @@ namespace TerrainGeneration
         private void DrawTile(GameTime gameTime)
         {
 
-            if (fc.Frames % 15 == 0)
+            if (fc.Frames % 50 == 1)
             {
                 device.Textures[0] = null;
+                device.Textures[1] = null;
                 //this.UpdateTexture();
 
                 this.UpdateTileData();
@@ -160,7 +161,7 @@ namespace TerrainGeneration
 
             float r = 1.0f;
             double angle = gameTime.TotalGameTime.TotalSeconds * 0.02;
-            Vector3 eyePos = new Vector3(r * (float)Math.Cos(angle) + 0.5f, 0.3f, r * (float)Math.Sin(angle) + 0.5f);
+            Vector3 eyePos = new Vector3(r * (float)Math.Cos(angle) + 0.5f, 0.6f, r * (float)Math.Sin(angle) + 0.5f);
 
             //this.player.Position = this.terrain.ClampToGround(new Vector3(r * (float)Math.Cos(angle) + 1f, 0.0f, r * (float)Math.Sin(angle) + 1f));
             //this.player.Position = this.terrain.ClampToGround(this.player.Position);
@@ -180,9 +181,20 @@ namespace TerrainGeneration
 
             terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["RaycastTile1"];
             this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 0f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 0f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, -1f), projectionMatrix, lightDirection);
 
             //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
-            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+            //worldMatrix = worldMatrix * Matrix.CreateTranslation(1.0f, 0.0f, 0.0f);
+            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1.0f, 0.0f, 0.0f), projectionMatrix, lightDirection);
+            terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
+            this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
 
         }
 

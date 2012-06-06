@@ -105,7 +105,7 @@ namespace TerrainEngine
 
             this.Offset = offset;// new Vector3(-0.5f, 0.0f, -0.5f);
             this.Scale = scale;
-            this.SetTransformMatrix();
+            this.SetTransformMatrix(Matrix.Identity);
         }
 
 
@@ -126,6 +126,8 @@ namespace TerrainEngine
 
         public void Draw(GameTime gameTime, GraphicsDevice device, Effect effect, Vector3 eyePos, Matrix viewMatrix, Matrix worldMatrix, Matrix projectionMatrix, Vector3 lightDirection)
         {
+
+            this.SetTransformMatrix(worldMatrix);
 
             // transform the eye pos into tile space
             Vector3 eyePosTile = Vector3.Transform(eyePos, this.InverseTileMatrix);
@@ -150,6 +152,7 @@ namespace TerrainEngine
 
         public void DrawBox(GameTime gameTime, GraphicsDevice device, Effect effect, Vector3 eyePos, Matrix viewMatrix, Matrix worldMatrix, Matrix projectionMatrix, Vector3 lightDirection)
         {
+            this.SetTransformMatrix(worldMatrix);
 
             // transform the eye pos into tile space
             Vector3 eyePosTile = Vector3.Transform(eyePos, this.InverseTileMatrix);
@@ -184,10 +187,10 @@ namespace TerrainEngine
         /// <summary>
         /// Creates the transform and inv-transform matrices.
         /// </summary>
-        private void SetTransformMatrix()
+        public void SetTransformMatrix(Matrix worldMatrix)
         {
 
-            var scaleMatrix = Matrix.CreateScale(this.Scale,1.0f,this.Scale);
+            var scaleMatrix = worldMatrix * Matrix.CreateScale(this.Scale, 1.0f, this.Scale);
             var offsetMatrix = Matrix.CreateTranslation(this.Offset);
 
             this.TileMatrix = Matrix.Multiply(scaleMatrix, offsetMatrix);//Matrix.CreateTranslation(this.Offset);

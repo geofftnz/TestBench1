@@ -90,7 +90,7 @@ namespace TerrainGeneration
 
         public void ModifyTerrain()
         {
-            this.Slump(1.0f, 0.05f, 100000);
+            this.Slump(1.0f, 0.05f, 50000);
         }
         public void Clear(float height)
         {

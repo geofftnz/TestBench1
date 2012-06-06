@@ -17,6 +17,7 @@ float3 LightDir;
 
 Texture HeightTex;
 sampler HeightTexSampler = sampler_state { texture = <HeightTex>; magfilter = POINT; minfilter = POINT; mipfilter = POINT; AddressU = mirror; AddressV = mirror;};
+sampler HeightTexSampler2 = sampler_state { texture = <HeightTex>; magfilter = POINT; minfilter = POINT; mipfilter = POINT; AddressU = Wrap; AddressV = Wrap;};
 
 
 
@@ -183,7 +184,14 @@ float4 IntersectRayHeightMap(float3 rayPos, float3 rayDir)
 
 			if (level < 1)  // at actual intersection
 			{
-				p.w = 0.5f + n;
+				p.w = 0.61f + n;
+
+				// if we've hit well below the point, discard. This effectively sets a max slope, so use with caution.
+				//if (height - p.y > 0.02f)
+				//{
+				//	p.w = 0.55f;
+				//}
+
 			}
 			else // still walking through the mipmaps
 			{
@@ -207,6 +215,7 @@ float4 IntersectRayHeightMap(float3 rayPos, float3 rayDir)
 
 }
 
+/*
 float3 CalculateNormal(float3 p)
 {
 	// Grab the samples on either side of the current one.
@@ -230,16 +239,26 @@ float3 CalculateNormal(float3 p)
 	float3 e = float3(q.x+qf, h, q.y);
 	
 	return normalize(cross(e-w,s-n));
-
-}
+}*/
 
 float texel = 0.0009765625f;
 float SampleHeight(float2 p)
 {
 	//float4 cell = tex2D(HeightTexSampler, p);
 	//return (cell.r + cell.g) * texel; // scale to texel space.
-	float h = tex2Dlod(HeightTexSampler, float4(p.x,p.y,0,0));
-	return h.r;
+	float h = tex2Dlod(HeightTexSampler2, float4(p.x,p.y,0,0));
+	return h.r*4;
+}
+
+float contour(float h0, float h1,float h2, float h3, float h4, float contourscale)
+{
+	float b0 = floor(h0*contourscale);
+	float b1 = floor(h1*contourscale);
+	float b2 = floor(h2*contourscale);
+	float b3 = floor(h3*contourscale);
+	float b4 = floor(h4*contourscale);
+
+	return (b0>b1 || b0>b2 || b0>b3 || b0>b4) ? 1.0:0.0;
 }
 
 float4 GenerateCol(float3 p)
@@ -264,6 +283,11 @@ float4 GenerateCol(float3 p)
 	
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
 	col *= (0.3 + 0.7 * diffuse);
+
+	float cscale = 10.0f;
+	col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
+	col.r += contour(h,h1,h2,h3,h4,cscale) * 0.1;
+
 	col.a = 1.0f;
 	return col;
 }
@@ -285,7 +309,7 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 
 	float4 p = IntersectRayHeightMap( boxEnter, rayDir);
 
-	if (p.w > 0.5)
+	if (p.w > 0.6)
 	{
 		//float3 n = CalculateNormal(p.xyz);
 		//float l = dot(n,LightDir)*0.2f+0.6f;
