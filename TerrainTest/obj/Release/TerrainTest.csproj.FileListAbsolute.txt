@@ -1,9 +1,0 @@
-Q:\code\TestBench1\TerrainTest\bin\Release\TerrainTest.dll
-Q:\code\TestBench1\TerrainTest\bin\Release\TerrainTest.pdb
-Q:\code\TestBench1\TerrainTest\bin\Release\TerrainEngine.dll
-Q:\code\TestBench1\TerrainTest\bin\Release\Utils.dll
-Q:\code\TestBench1\TerrainTest\bin\Release\TerrainEngine.pdb
-Q:\code\TestBench1\TerrainTest\bin\Release\Utils.pdb
-Q:\code\TestBench1\TerrainTest\obj\Release\ResolveAssemblyReference.cache
-Q:\code\TestBench1\TerrainTest\obj\Release\TerrainTest.dll
-Q:\code\TestBench1\TerrainTest\obj\Release\TerrainTest.pdb

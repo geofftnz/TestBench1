@@ -48,6 +48,7 @@ namespace Utils
             return d;
         }
 
+
         /// <summary>
         /// Generates a max mip-map level, but extends the sampling rect to 3x3 instead of 2x2
         /// 

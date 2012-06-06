@@ -154,17 +154,12 @@ namespace TerrainEngine
             // transform the eye pos into tile space
             Vector3 eyePosTile = Vector3.Transform(eyePos, this.InverseTileMatrix);
 
-            //effect.Parameters["xWorld"].SetValue(worldMatrix);
             effect.Parameters["HeightTex"].SetValue(this.HeightTex);
             effect.Parameters["Eye"].SetValue(eyePosTile);
             effect.Parameters["World"].SetValue(this.TileMatrix);
             effect.Parameters["View"].SetValue(viewMatrix);
-            //effect.Parameters["TexToView"].SetValue(texToViewMatrix);
             effect.Parameters["Projection"].SetValue(projectionMatrix);
             effect.Parameters["LightDir"].SetValue(lightDirection);
-            //var light = new Vector3(1.2f, 3.0f, 0.5f);
-            //light.Normalize();
-            //effect.Parameters["xLightDirection"].SetValue(light);
 
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
@@ -172,7 +167,6 @@ namespace TerrainEngine
 
 
                 this.RenderBoundingBox(device);
-                //this.RenderTile(device);
 
             }
         }
@@ -202,6 +196,13 @@ namespace TerrainEngine
 
         private void CreateHeightTexture(GraphicsDevice device)
         {
+            this.HeightTex = new Texture2D(device, this.Width, this.Height, true, SurfaceFormat.Single);
+
+            UpdateHeightTexture();
+        }
+
+        private void UpdateHeightTexture()
+        {
             int maxlevel = 0;
             int x = this.Width;
 
@@ -211,29 +212,15 @@ namespace TerrainEngine
                 maxlevel++;
                 x >>= 1;
             }
-            
-            //TODO: specify mipmaps and load max mipmap into each level.
-            this.HeightTex = new Texture2D(device, this.Width, this.Height, true, SurfaceFormat.Single);
-            //this.HeightTex.SetData(this.Data);
+
 
             float[] mipleveldata = new float[this.Data.Length];
-            this.Data.CopyTo(mipleveldata,0);
+            this.Data.CopyTo(mipleveldata, 0);
 
             for (int level = 0; level <= maxlevel; level++)
             {
-                //this.HeightTex.SetData(this.Data);
-                //this.HeightTex.SetData(level,new Rectangle(0,0,1<<level,1<<level),mipleveldata,0,(1<<level)*(1<<level));
                 this.HeightTex.SetData(level, new Rectangle(0, 0, this.Width >> level, this.Width >> level), mipleveldata, 0, mipleveldata.Length);
-
-                //if (level == 0)
-                //{
-                    // first level is 3x3 sampled
-                  //  mipleveldata = mipleveldata.GenerateMaximumMipMapLevel3(this.Width >> level, this.Width >> level);
-                //}
-                //else
-                //{
-                    mipleveldata = mipleveldata.GenerateMaximumMipMapLevel(this.Width >> level, this.Width >> level);
-                //}
+                mipleveldata = mipleveldata.GenerateMaximumMipMapLevel(this.Width >> level, this.Width >> level);
             }
         }
 
@@ -252,7 +239,7 @@ namespace TerrainEngine
         private void CreateNormalTexture(GraphicsDevice device)
         {
             var tex = new Color[this.Width * this.Height];
-
+            /*
             float dx = 1.0f / (float)(this.Width - 1);
             float dz = 1.0f / (float)(this.Height - 1);
             float dx2 = 1.0f / (float)(this.Width - 1);
@@ -309,7 +296,7 @@ namespace TerrainEngine
                     i++;
                 }
             });
-
+            */
             this.NormalTex = new Texture2D(device, this.Width, this.Height, false, SurfaceFormat.Color);
             this.NormalTex.SetData(tex);
         }
@@ -353,6 +340,12 @@ namespace TerrainEngine
             this.CreateHeightTexture(device);
             this.CreateNormalTexture(device);
             this.CreateShadeTexture(device);
+        }
+
+        public void UpdateHeights(GraphicsDevice device)
+        {
+            this.SetupBoundingBox();
+            this.UpdateHeightTexture();
         }
 
         public void SetDataFromCells(Terrain.Cell[] cells, int xofs, int yofs, int stride)

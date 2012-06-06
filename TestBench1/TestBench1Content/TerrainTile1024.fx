@@ -1,6 +1,6 @@
 //	defines
-#define TEXDIM 256
-#define TEXLOG2 8
+#define TEXDIM 1024
+#define TEXLOG2 10
 
 
 
@@ -233,6 +233,40 @@ float3 CalculateNormal(float3 p)
 
 }
 
+float texel = 0.0009765625f;
+float SampleHeight(float2 p)
+{
+	//float4 cell = tex2D(HeightTexSampler, p);
+	//return (cell.r + cell.g) * texel; // scale to texel space.
+	float h = tex2Dlod(HeightTexSampler, float4(p.x,p.y,0,0));
+	return h.r;
+}
+
+float4 GenerateCol(float3 p)
+{
+	float4 colH1 = {0.7,0.7,0.8,1.0};
+	float4 colH2 = {0.9,0.9,0.95,1.0};
+
+	float4 colL1 = {0.8,0.6,0.5,1.0};
+	float4 colL2 = {1.0,0.8,0.1,1.0};
+
+	float h = SampleHeight(p.xy);
+	float looseblend = 0.0f;
+	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
+
+	float h1 = SampleHeight(float2(p.x,p.y-texel));
+	float h2 = SampleHeight(float2(p.x,p.y+texel));
+	float h3 = SampleHeight(float2(p.x-texel,p.y));
+	float h4 = SampleHeight(float2(p.x+texel,p.y));
+
+	float3 n = normalize(float3(h2-h1,h4-h3,2.0*texel));
+	//float3 l = normalize(float3(0.5,0.2,0.2));
+	
+	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
+	col *= (0.3 + 0.7 * diffuse);
+	col.a = 1.0f;
+	return col;
+}
 
 // raycast with function call to intersect
 PixelToFrame PSRaycastTile(VertexShaderOutput input) 
@@ -242,6 +276,9 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 	output.Colour = float4(0.0f,1.0f,0.6f,1.0f);
 	output.Depth = 1.0f;
 
+	float4 colH1 = {0.7,0.7,0.8,1.0};
+	float4 colH2 = {0.9,0.9,0.95,1.0};
+
 	float4 col={0.0f,0.0f,1.0f,1.0f};
 	float3 rayDir = normalize(input.BoxCoord.xyz - Eye);
 	float3 boxEnter = GetFirstSceneIntersection(Eye, rayDir);
@@ -250,13 +287,11 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 
 	if (p.w > 0.5)
 	{
-		float3 n = CalculateNormal(p.xyz);
-
-		float l = dot(n,LightDir)*0.2f+0.6f;
-
-		col.rgb = lerp(float3(0.0f,0.4f,0.0f),float3(0.8f,0.9f,0.4f),p.y * 4.0f) * l;
-
-		col.a = 1.0f;
+		//float3 n = CalculateNormal(p.xyz);
+		//float l = dot(n,LightDir)*0.2f+0.6f;
+		//col.rgb = lerp(colH1,colH2,p.y * 4.0f) * l;
+		//col.a = 1.0f;
+		col = GenerateCol(p.xzy);
 	}
 	else
 	{

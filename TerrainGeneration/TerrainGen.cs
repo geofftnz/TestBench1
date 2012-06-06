@@ -84,6 +84,8 @@ namespace TerrainGeneration
 
             //this.AddSimplexNoise(4, 0.002f, 5.0f);
             //this.AddSimplexNoise(4, 0.01f, 0.2f);
+
+            this.SetBaseLevel();
         }
 
         public void ModifyTerrain()
@@ -95,6 +97,16 @@ namespace TerrainGeneration
             for (int i = 0; i < Width * Height; i++)
             {
                 this.Map[i] = new Cell();
+            }
+        }
+
+        public void SetBaseLevel()
+        {
+            float min = this.Map.Select(c => c.Hard).Min();
+
+            for (int i = 0; i < Width * Height; i++)
+            {
+                this.Map[i].Hard -= min;
             }
         }
 

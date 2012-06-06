@@ -6,6 +6,8 @@
 *.exe
 *.o
 *.so
+*.suo
+*.cachefile
 
 # Packages #
 ############
@@ -25,6 +27,9 @@ Thumbs.db
 # Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
 bin
 obj
+
+bin/x86
+obj/x86
 
 
 # mstest test results

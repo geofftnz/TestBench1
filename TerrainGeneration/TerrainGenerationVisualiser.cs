@@ -26,7 +26,7 @@ namespace TerrainGeneration
 
         // misc
         private FrameCounter fc = new FrameCounter();
-        private Matrix viewMatrix;
+        //private Matrix viewMatrix;
         private Matrix projectionMatrix;
         private GraphicsDeviceManager graphics;
         private GraphicsDevice device;
@@ -37,25 +37,28 @@ namespace TerrainGeneration
         //private short[] terrainQuadIndex = new short[4];
         private QuadRender quad;
 
+        private TerrainEngine.TerrainTile tile;
+        private Effect terrainTileEffect;
+
 
         public TerrainGenerationVisualiser()
         {
-            this.Terrain = new TerrainGen(1024,1024);
+            this.Terrain = new TerrainGen(1024, 1024);
             this.Terrain.InitTerrain1();
 
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             this.IsFixedTimeStep = false;
+
+            this.tile = new TerrainEngine.TerrainTile(1024, 1024, new Vector3(0f, 0f, 0f), 1.0f);
         }
 
         protected override void Initialize()
         {
-            graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 1200;
+            graphics.PreferredBackBufferWidth = 1400;
+            graphics.PreferredBackBufferHeight = 1024;
             graphics.IsFullScreen = false;
             graphics.ApplyChanges();
-
-            this.projectionMatrix = Matrix.CreateOrthographic(1600f, 1200f, 0.0f, 1.0f);
 
             Window.Title = "Generating Terrain";
 
@@ -68,6 +71,7 @@ namespace TerrainGeneration
             device = graphics.GraphicsDevice;
             this.sprites = new SpriteBatch(device);
             terrainVisEffect = Content.Load<Effect>("GenerationVisualiser");
+            terrainTileEffect = Content.Load<Effect>("TerrainTile1024");
             statusFont = Content.Load<SpriteFont>("statusFont");
 
             quad = new QuadRender(device);
@@ -75,6 +79,9 @@ namespace TerrainGeneration
             // initial load
             this.CreateTexture(device);
             this.UpdateTexture();
+
+            // terrain tile
+            this.tile.LoadContent(device);
 
             base.LoadContent();
         }
@@ -94,6 +101,21 @@ namespace TerrainGeneration
             fc.Frame();
 
             this.Terrain.ModifyTerrain();
+
+            //Draw2DTerrain(gameTime);
+            DrawTile(gameTime);
+
+            sprites.Begin();
+            sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Wheat);
+            sprites.End();
+
+            base.Draw(gameTime);
+        }
+
+        private void Draw2DTerrain(GameTime gameTime)
+        {
+            this.projectionMatrix = Matrix.CreateOrthographic(1600f, 1200f, 0.0f, 1.0f);
+
             if (fc.Frames % 15 == 0)
             {
                 device.Textures[0] = null;
@@ -106,7 +128,6 @@ namespace TerrainGeneration
 
             Matrix worldMatrix = Matrix.Identity;
 
-
             this.terrainVisEffect.Parameters["HeightTex"].SetValue(this.VisTexture);
             this.terrainVisEffect.Parameters["World"].SetValue(worldMatrix);
             this.terrainVisEffect.Parameters["View"].SetValue(worldMatrix);
@@ -115,18 +136,54 @@ namespace TerrainGeneration
             this.terrainVisEffect.CurrentTechnique = this.terrainVisEffect.Techniques["Relief"];
 
             quad.RenderFullScreenQuad(this.terrainVisEffect);
+        }
 
-            //foreach (var pass in this.terrainVisEffect.CurrentTechnique.Passes)
-            //{
-            //    pass.Apply();
-            //    device.DrawUserIndexedPrimitives(PrimitiveType.TriangleStrip, this.terrainQuad, 0, 4, this.terrainQuadIndex, 0, 2);
-            //}
+        private void DrawTile(GameTime gameTime)
+        {
 
-            sprites.Begin();
-            sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Wheat);
-            sprites.End();
+            if (fc.Frames % 15 == 0)
+            {
+                device.Textures[0] = null;
+                //this.UpdateTexture();
 
-            base.Draw(gameTime);
+                this.UpdateTileData();
+                this.tile.UpdateHeights(device);
+            }
+
+
+            this.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, device.Viewport.AspectRatio, 0.1f, 20.0f); // 5km view distance
+
+            device.BlendState = BlendState.NonPremultiplied;
+            device.DepthStencilState = DepthStencilState.Default;
+
+            //device.Clear(new Color(0.6f, 0.7f, 1.0f));
+
+            float r = 1.0f;
+            double angle = gameTime.TotalGameTime.TotalSeconds * 0.02;
+            Vector3 eyePos = new Vector3(r * (float)Math.Cos(angle) + 0.5f, 0.3f, r * (float)Math.Sin(angle) + 0.5f);
+
+            //this.player.Position = this.terrain.ClampToGround(new Vector3(r * (float)Math.Cos(angle) + 1f, 0.0f, r * (float)Math.Sin(angle) + 1f));
+            //this.player.Position = this.terrain.ClampToGround(this.player.Position);
+
+            //this.player.Position = eyePos;
+            //this.viewMatrix = this.player.ViewMatrix;
+
+            Matrix viewMatrix = Matrix.CreateLookAt(eyePos, new Vector3(0.5f, 0.0f, 0.5f), new Vector3(0, 1, 0));
+
+
+
+            Matrix worldMatrix = Matrix.Identity;
+            // light direction
+            Vector3 lightDirection = new Vector3(1.0f, 1.0f, 0.2f);
+            lightDirection.Normalize();
+
+
+            terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["RaycastTile1"];
+            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+
+            //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
+            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+
         }
 
 
@@ -135,11 +192,28 @@ namespace TerrainGeneration
         private void CreateTexture(GraphicsDevice d)
         {
             this.VisTexture = new Texture2D(d, this.VisTextureWidth, this.VisTextureHeight, false, SurfaceFormat.Vector4);
+            this.VisTexture.Name = "TerrainVisTex";
         }
         private void UpdateTexture()
         {
             this.VisTexture.SetData(this.Terrain.Map);
         }
+
+        private void UpdateTileData()
+        {
+            int i = 0;
+            for (int y = 0; y < this.tile.Height; y++)
+            {
+                for (int x = 0; x < this.tile.Width; x++)
+                {
+                    this.tile.Data[i] = (this.Terrain.Map[i].Hard + this.Terrain.Map[i].Loose) / 4096.0f;
+                    i++;
+                }
+            }
+
+        }
+
+
         //private void SetupTerrainQuad()
         //{
         //    int i = 0;
