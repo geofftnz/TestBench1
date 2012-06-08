@@ -90,7 +90,7 @@ namespace TerrainGeneration
 
         public void ModifyTerrain()
         {
-            this.Slump(1.0f, 0.05f, 50000);
+            this.Slump(1.0f, 0.05f, 100000);
         }
         public void Clear(float height)
         {
@@ -245,12 +245,13 @@ namespace TerrainGeneration
         /// <param name="threshold">height difference that will trigger a redistribution of material</param>
         /// <param name="amount">amount of material to move (proportional to difference)</param>
         /// 
-        public void Slump(float threshold, float amount, int numIterations)
+        public void Slump(float _threshold, float amount, int numIterations)
         {
-            float amount2 = amount * 0.707f;
+            //float amount2 = amount * 0.707f;
+            float _threshold2 = (float)(_threshold * Math.Sqrt(2.0));
             this.ClearTempDiffMap();
 
-            Func<int, int, float, float, float[], float> SlumpF = (pFrom, pTo, h, a, diffmap) =>
+            Func<int, int, float, float, float, float[], float> SlumpF = (pFrom, pTo, h, a, threshold, diffmap) =>
             {
                 float loose = this.Map[pFrom].Loose; // can only slump loose material.
                 if (loose > 0.0f)
@@ -286,15 +287,15 @@ namespace TerrainGeneration
 
                 float h = this.Map[p].Hard + this.Map[p].Loose; 
 
-                h += SlumpF(n, p, h, amount, diffmap);
-                h += SlumpF(s, p, h, amount, diffmap);
-                h += SlumpF(w, p, h, amount, diffmap);
-                h += SlumpF(e, p, h, amount, diffmap);
+                h += SlumpF(n, p, h, amount, _threshold, diffmap);
+                h += SlumpF(s, p, h, amount, _threshold, diffmap);
+                h += SlumpF(w, p, h, amount, _threshold, diffmap);
+                h += SlumpF(e, p, h, amount, _threshold, diffmap);
 
-                h += SlumpF(nw, p, h, amount2, diffmap);
-                h += SlumpF(ne, p, h, amount2, diffmap);
-                h += SlumpF(sw, p, h, amount2, diffmap);
-                h += SlumpF(se, p, h, amount2, diffmap);
+                h += SlumpF(nw, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(ne, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(sw, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(se, p, h, amount, _threshold2, diffmap);
             };
 
             //var threadlocal = new { diffmap = new float[this.Width * this.Height], r = new Random() };
