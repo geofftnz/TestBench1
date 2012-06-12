@@ -40,6 +40,11 @@ namespace TerrainGeneration
         private TerrainEngine.TerrainTile tile;
         private Effect terrainTileEffect;
 
+        private Color[] shadeTexData;
+
+        private bool paused = false;
+
+
 
         public TerrainGenerationVisualiser()
         {
@@ -51,6 +56,7 @@ namespace TerrainGeneration
             this.IsFixedTimeStep = false;
 
             this.tile = new TerrainEngine.TerrainTile(1024, 1024, new Vector3(0f, 0f, 0f), 1.0f);
+            this.shadeTexData = new Color[this.Terrain.Width * this.Terrain.Height];
         }
 
         protected override void Initialize()
@@ -93,6 +99,14 @@ namespace TerrainGeneration
 
         protected override void Update(GameTime gameTime)
         {
+
+            var ks = Keyboard.GetState();
+
+            if (ks.IsKeyDown(Keys.Space))
+            {
+                this.paused = !this.paused;
+            }
+
             base.Update(gameTime);
         }
 
@@ -124,7 +138,7 @@ namespace TerrainGeneration
 
             device.BlendState = BlendState.NonPremultiplied;
             device.DepthStencilState = DepthStencilState.Default;
-            device.Clear(new Color(0.4f, 0.42f, 0.46f));
+            device.Clear(new Color(0.8f, 0.88f, 0.92f));
 
             Matrix worldMatrix = Matrix.Identity;
 
@@ -138,17 +152,19 @@ namespace TerrainGeneration
             quad.RenderFullScreenQuad(this.terrainVisEffect);
         }
 
+        private double angle = 0.0;
         private void DrawTile(GameTime gameTime)
         {
 
-            if (fc.Frames % 50 == 1)
+            if (fc.Frames % 20 == 1)
             {
                 device.Textures[0] = null;
                 device.Textures[1] = null;
+                device.Textures[2] = null;
                 //this.UpdateTexture();
 
                 this.UpdateTileData();
-                this.tile.UpdateHeights(device);
+               
             }
 
 
@@ -157,10 +173,10 @@ namespace TerrainGeneration
             device.BlendState = BlendState.NonPremultiplied;
             device.DepthStencilState = DepthStencilState.Default;
 
-            //device.Clear(new Color(0.6f, 0.7f, 1.0f));
+            device.Clear(new Color(0.8f, 0.88f, 0.92f));
 
             float r = 1.0f;
-            double angle = gameTime.TotalGameTime.TotalSeconds * 0.02;
+            angle += this.paused?0.0:gameTime.ElapsedGameTime.TotalSeconds * 0.1;
             Vector3 eyePos = new Vector3(r * (float)Math.Cos(angle) + 0.5f, 0.6f, r * (float)Math.Sin(angle) + 0.5f);
 
             //this.player.Position = this.terrain.ClampToGround(new Vector3(r * (float)Math.Cos(angle) + 1f, 0.0f, r * (float)Math.Sin(angle) + 1f));
@@ -181,6 +197,7 @@ namespace TerrainGeneration
 
             terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["RaycastTile1"];
             this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+
             this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 0f), projectionMatrix, lightDirection);
             this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 1f), projectionMatrix, lightDirection);
             this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, 1f), projectionMatrix, lightDirection);
@@ -193,8 +210,8 @@ namespace TerrainGeneration
             //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
             //worldMatrix = worldMatrix * Matrix.CreateTranslation(1.0f, 0.0f, 0.0f);
             //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1.0f, 0.0f, 0.0f), projectionMatrix, lightDirection);
-            terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
-            this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+            //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
+            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
 
         }
 
@@ -214,15 +231,23 @@ namespace TerrainGeneration
         private void UpdateTileData()
         {
             int i = 0;
+
+            // heights & col
             for (int y = 0; y < this.tile.Height; y++)
             {
                 for (int x = 0; x < this.tile.Width; x++)
                 {
-                    this.tile.Data[i] = (this.Terrain.Map[i].Hard + this.Terrain.Map[i].Loose) / 4096.0f;
+                    var c = this.Terrain.Map[i];
+                    this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
+                    this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f,255.0f));
+                    this.shadeTexData[i].G = (byte)((c.Loose * 8.0f).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].B = (byte)((c.MovingWater * 8.0f).ClampInclusive(0.0f, 255.0f));
                     i++;
                 }
             }
 
+            this.tile.UpdateHeights(device);
+            this.tile.UpdateShadeTexture(this.shadeTexData);
         }
 
 

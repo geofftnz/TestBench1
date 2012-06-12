@@ -92,6 +92,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ErosionParticle.cs" />
     <Compile Include="QuadRender.cs" />
     <Compile Include="TerrainGen.cs" />
     <Compile Include="TerrainGenerationVisualiser.cs" />

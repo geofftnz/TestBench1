@@ -14,6 +14,16 @@ namespace TerrainGeneration
     {
         const int NUMTHREADS = 3;
 
+        #region Generation Parameters
+        public float TerrainSlumpMaxHeightDifference { get; set; }
+        public float TerrainSlumpMovementAmount { get; set; }
+        public int TerrainSlumpSamplesPerFrame { get; set; }
+
+        public int WaterNumParticles { get; set; }
+        #endregion
+
+
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct Cell
         {
@@ -26,13 +36,21 @@ namespace TerrainGeneration
             /// </summary>
             public float Loose;
             /// <summary>
-            /// Average saturation of tile - used for river mapping
+            /// Standing water - will flow unrestricted
             /// </summary>
             public float Water;
             /// <summary>
-            /// Aux padding out to 16 bytes.
+            /// Non-height component indicating how much flowing water is over this tile.
             /// </summary>
-            public float Aux;
+            public float MovingWater;
+
+            public float Height
+            {
+                get
+                {
+                    return Hard + Loose;
+                }
+            }
         }
 
         public int Width { get; private set; }
@@ -41,12 +59,29 @@ namespace TerrainGeneration
         public Cell[] Map { get; private set; }
         private float[] TempDiffMap;
 
+        private List<ErosionParticle> WaterParticles = new List<ErosionParticle>();
+
         public TerrainGen(int width, int height)
         {
             this.Width = width;
             this.Height = height;
             this.Map = new Cell[this.Width * this.Height];
             this.TempDiffMap = new float[this.Width * this.Height];
+
+            // init parameters
+            this.TerrainSlumpMaxHeightDifference = 1.0f;
+            this.TerrainSlumpMovementAmount = 0.05f;
+            this.TerrainSlumpSamplesPerFrame = 20000;
+
+            this.WaterNumParticles = 20000;
+
+            Random r = new Random();
+
+            for (int i = 0; i < this.WaterNumParticles; i++)
+            {
+                this.WaterParticles.Add(new ErosionParticle(r.Next(this.Width), r.Next(this.Height)));
+            }
+
         }
 
         /// <summary>
@@ -62,6 +97,15 @@ namespace TerrainGeneration
             return x.Wrap(this.Width) + y.Wrap(this.Height) * this.Width;
         }
 
+        private int CX(int i)
+        {
+            return (i % this.Width).Wrap(this.Width);
+        }
+        private int CY(int i)
+        {
+            return (i / this.Width).Wrap(this.Height);
+        }
+
         private void ClearTempDiffMap()
         {
             Array.Clear(this.TempDiffMap, 0, this.Width * this.Height);
@@ -71,12 +115,15 @@ namespace TerrainGeneration
         {
             this.Clear(0.0f);
             this.AddSimplexNoise(6, 0.1f / (float)this.Width, 2000.0f);
-            //this.AddSimplexNoise(4, 0.1f / (float)this.Width, 4000.0f, x => Math.Abs(x));
-            this.AddSimplexPowNoise(7, 0.333f / (float)this.Width, 8000.0f, 3.0f, x => Math.Abs(x));
-            this.AddSimplexPowNoise(4, 1.7f / (float)this.Width, 500.0f, 4.0f, x => Math.Abs(x));
-            this.AddSimplexNoise(7, 3.0f / (float)this.Width, 100.0f);
 
-            this.AddLooseMaterial(5.0f);
+            //this.AddSimplexNoise(9, 0.3f / (float)this.Width, 2000.0f, x => Math.Abs(x)); // really big hills
+
+            this.AddSimplexPowNoise(7, 0.13f / (float)this.Width, 8000.0f, 3.0f, x => Math.Abs(x));
+
+            //this.AddSimplexPowNoise(4, 1.7f / (float)this.Width, 500.0f, 4.0f, x => Math.Abs(x));
+            this.AddSimplexNoise(9, 0.7f / (float)this.Width, 500.0f);
+
+            this.AddLooseMaterial(10.0f);
 
             //this.AddSimplexNoise(2, 0.1f, 1.0f);
 
@@ -88,9 +135,11 @@ namespace TerrainGeneration
             this.SetBaseLevel();
         }
 
+
         public void ModifyTerrain()
         {
-            this.Slump(1.0f, 0.05f, 100000);
+            this.RunWater();
+            this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
         }
         public void Clear(float height)
         {
@@ -117,6 +166,153 @@ namespace TerrainGeneration
                 this.Map[i].Loose += amount;
             }
         }
+
+
+        #region Water
+
+        public void RunWater()
+        {
+            this.ClearTempDiffMap();
+
+            Random rand = new Random();
+
+            Func<int, Tuple<int, float>, Tuple<int, float>> FindLowest = (indexToCheck, current) =>
+            {
+                float h = this.Map[indexToCheck].Height;
+                if (h < current.Item2)
+                {
+                    return new Tuple<int, float>(indexToCheck, h);
+                }
+                return current;
+            };
+
+
+            foreach (var wp in this.WaterParticles)
+            {
+                bool particleReset = false;
+
+                // make sure we're in range of the terrain.
+
+                // work out where water is going to flow to next
+                // get the height of our current cell
+                int x = wp.X;
+                int y = wp.Y;
+                int i = C(x, y);
+                float h = this.Map[i].Height;
+
+                // add some flowing water to the terrain so we can see it
+                this.Map[i].MovingWater += 0.1f + wp.Velocity * 0.9f;
+
+
+                Tuple<int, float> lowestNeighbour = new Tuple<int, float>(0, 1000000.0f);
+
+                lowestNeighbour = FindLowest(C(x, y - 1), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x, y + 1), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x - 1, y), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x + 1, y), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x - 1, y - 1), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x + 1, y - 1), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x - 1, y + 1), lowestNeighbour);
+                lowestNeighbour = FindLowest(C(x + 1, y + 1), lowestNeighbour);
+
+                float diff = h - lowestNeighbour.Item2;
+
+                // if we're currently at the lowest point in our neighbourhood, dump all the material we can before seeing if we can move.
+                if (diff < 0.0f)
+                {
+                    if (wp.CarryingAmount > -diff)  // if we're carrying more than the deficit...
+                    {
+                        wp.CarryingAmount -= -diff; // ... remove material from particle
+                        this.TempDiffMap[i] += -diff;  // ...and add to temp diff map.
+                        diff = 0.0f;  // diff is now zero since we've filled the hole.
+                    }
+                    else  // we're carrying less than the size of the hole
+                    {
+                        this.TempDiffMap[i] += wp.CarryingAmount;  // drop the lot
+                        wp.CarryingAmount = 0.0f;
+
+                        // reset particle
+                        wp.Reset(rand.Next(this.Width), rand.Next(this.Height));
+                        particleReset = true;
+                    }
+                }
+
+                if (!particleReset)
+                {
+                    // set our new velocity 
+                    // TODO: different treatment for diagonal moves
+                    //Math.Atan2(diff, 1.0f);
+                    float newVelocity = (float)Math.Atan(diff) / 1.570796f;
+                    wp.Velocity = wp.Velocity * 0.05f + 0.95f * newVelocity;
+
+                    // calculate new carrying capacity
+                    wp.CarryingCapacity = 0.05f + 2.0f * wp.Velocity;
+
+                    // if we're over our carrying capacity, start dropping material
+                    float cdiff = wp.CarryingAmount - wp.CarryingCapacity;
+                    if (cdiff > 0.0f)
+                    {
+                        cdiff *= 0.3f; // amount to drop
+
+                        // drop a portion of our material
+                        this.TempDiffMap[i] += cdiff;
+                        wp.CarryingAmount -= cdiff;
+                    }
+                    else  // we're under our carrying capacity, so do some erosion
+                    {
+                        cdiff = -cdiff;
+
+                        float loose = this.Map[i].Loose;
+                        float hard = this.Map[i].Hard;
+
+                        float looseErodeAmount = (0.01f + wp.Velocity) * 0.5f; // erosion coefficient for loose material
+                        float hardErodeAmount = (0.01f + wp.Velocity) * 0.1f; // erosion coefficient for hard material
+                        
+                        // first of all, see if we can pick up any loose material.
+                        if (loose > 0.0f)
+                        {
+                            if (looseErodeAmount > loose) // if we can erode more than is there, take the lot
+                            {
+                                this.Map[i].Loose = 0.0f;
+                                wp.CarryingAmount += loose;
+                            }
+                            else // otherwise take only what we can
+                            {
+                                this.Map[i].Loose -= looseErodeAmount;
+                                wp.CarryingAmount += looseErodeAmount;
+                            }
+                        }
+                        else  // we're down to hard material
+                        {
+                            this.Map[i].Hard -= hardErodeAmount;
+                            wp.CarryingAmount += hardErodeAmount * 1.5f; // loose material is less dense than hard, so make it greater.
+                        }
+                    }
+
+                    // move
+                    wp.X = CX(lowestNeighbour.Item1);
+                    wp.Y = CY(lowestNeighbour.Item1);
+
+                    //wp.Position = new Vector2(CX(lowestNeighbour.Item1), CY(lowestNeighbour.Item1));
+                }
+
+            }
+
+            // apply dropped loose material to terrain
+            for (int i = 0; i < this.Width * this.Height; i++)
+            {
+                this.Map[i].Loose += this.TempDiffMap[i];
+            }
+
+            // fade water amount
+            for (int i = 0; i < this.Width * this.Height; i++)
+            {
+                this.Map[i].MovingWater *= 0.98f;
+            }
+
+        }
+
+        #endregion
 
         #region noise
         public void AddSimplexNoise(int octaves, float scale, float amplitude)
@@ -148,7 +344,7 @@ namespace TerrainGeneration
             );
         }
 
-        public void AddSimplexNoise(int octaves, float scale, float amplitude, Func<float,float> transform)
+        public void AddSimplexNoise(int octaves, float scale, float amplitude, Func<float, float> transform)
         {
             var r = new Random();
 
@@ -177,7 +373,7 @@ namespace TerrainGeneration
             );
         }
 
-        public void AddSimplexPowNoise(int octaves, float scale, float amplitude, float power, Func<float,float> postTransform)
+        public void AddSimplexPowNoise(int octaves, float scale, float amplitude, float power, Func<float, float> postTransform)
         {
             var r = new Random();
 
@@ -285,7 +481,7 @@ namespace TerrainGeneration
                 int sw = C(x - 1, y + 1);
                 int se = C(x + 1, y + 1);
 
-                float h = this.Map[p].Hard + this.Map[p].Loose; 
+                float h = this.Map[p].Hard + this.Map[p].Loose;
 
                 h += SlumpF(n, p, h, amount, _threshold, diffmap);
                 h += SlumpF(s, p, h, amount, _threshold, diffmap);

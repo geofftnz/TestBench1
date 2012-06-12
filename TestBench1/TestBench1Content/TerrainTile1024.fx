@@ -19,7 +19,8 @@ Texture HeightTex;
 sampler HeightTexSampler = sampler_state { texture = <HeightTex>; magfilter = POINT; minfilter = POINT; mipfilter = POINT; AddressU = mirror; AddressV = mirror;};
 sampler HeightTexSampler2 = sampler_state { texture = <HeightTex>; magfilter = POINT; minfilter = POINT; mipfilter = POINT; AddressU = Wrap; AddressV = Wrap;};
 
-
+Texture ShadeTex;
+sampler ShadeTexSampler = sampler_state { texture = <ShadeTex>; magfilter = LINEAR; minfilter = LINEAR; mipfilter = POINT; AddressU = Wrap; AddressV = Wrap;};
 
 // TODO: add effect parameters here.
 
@@ -263,15 +264,21 @@ float contour(float h0, float h1,float h2, float h3, float h4, float contourscal
 
 float4 GenerateCol(float3 p)
 {
-	float4 colH1 = {0.7,0.7,0.8,1.0};
-	float4 colH2 = {0.9,0.9,0.95,1.0};
+	float4 colH1 = {0.3,0.247,0.223,1.0};
+	float4 colH2 = {0.3,0.247,0.223,1.0};
 
-	float4 colL1 = {0.8,0.6,0.5,1.0};
-	float4 colL2 = {1.0,0.8,0.1,1.0};
+	float4 colL1 = {0.41,0.39,0.16,1.0};
+	float4 colL2 = {0.41,0.39,0.16,1.0};
 
+	float4 colW = {0.7,0.8,1.0,1.0};
+
+	float4 s = tex2D(ShadeTexSampler,p.xy);
 	float h = SampleHeight(p.xy);
-	float looseblend = 0.0f;
+
+	float looseblend = s.g * 4.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
+
+	col = lerp(col,colW,s.b);
 
 	float h1 = SampleHeight(float2(p.x,p.y-texel));
 	float h2 = SampleHeight(float2(p.x,p.y+texel));
@@ -284,11 +291,12 @@ float4 GenerateCol(float3 p)
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
 	col *= (0.3 + 0.7 * diffuse);
 
-	float cscale = 10.0f;
-	col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
-	col.r += contour(h,h1,h2,h3,h4,cscale) * 0.1;
+	//float cscale = 10.0f;
+	//col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
+	//col.r += contour(h,h1,h2,h3,h4,cscale) * 0.1;
 
 	col.a = 1.0f;
+
 	return col;
 }
 
@@ -297,11 +305,11 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 {
 	PixelToFrame output;
 
-	output.Colour = float4(0.0f,1.0f,0.6f,1.0f);
+	//output.Colour = float4(0.0f,1.0f,0.6f,1.0f);
 	output.Depth = 1.0f;
 
-	float4 colH1 = {0.7,0.7,0.8,1.0};
-	float4 colH2 = {0.9,0.9,0.95,1.0};
+	//float4 colH1 = {0.7,0.7,0.8,1.0};
+	//float4 colH2 = {0.9,0.9,0.95,1.0};
 
 	float4 col={0.0f,0.0f,1.0f,1.0f};
 	float3 rayDir = normalize(input.BoxCoord.xyz - Eye);
@@ -325,8 +333,17 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 	// depth calculation
 	float4 pp2 = mul(float4(p.xyz,1),World);
 	float4 pp = mul(mul(pp2.xyzw,View),Projection);  
-	output.Depth = pp.z/pp.w;
-	output.Colour = col;
+	float d = pp.z/pp.w;
+
+	float dd = abs(length(p.xyz - Eye));
+
+	float4 fogcol = {0.8f, 0.88f, 0.92f,1.0f};
+	float fogamount = 1.0f / (exp(dd * dd * 0.1));
+
+	//col = lerp(fogcol,col,fogamount);
+
+	output.Depth = d;
+	output.Colour = lerp(fogcol,col,fogamount);
 
 	return output;
 }
