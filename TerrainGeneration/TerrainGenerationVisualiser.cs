@@ -43,6 +43,9 @@ namespace TerrainGeneration
         private Color[] shadeTexData;
 
         private bool paused = false;
+        private double angle = 0.0;
+        private float eyeradius = 0.5f;
+        private float eyeheight = 0.6f;
 
 
 
@@ -107,6 +110,13 @@ namespace TerrainGeneration
                 this.paused = !this.paused;
             }
 
+            if (ks.IsKeyDown(Keys.Left)) { angle += 0.02; }
+            if (ks.IsKeyDown(Keys.Right)) { angle -= 0.02; }
+            if (ks.IsKeyDown(Keys.Up)) { eyeradius -= 0.05f; }
+            if (ks.IsKeyDown(Keys.Down)) { eyeradius += 0.05f; }
+            if (ks.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
+            if (ks.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
+
             base.Update(gameTime);
         }
 
@@ -152,11 +162,10 @@ namespace TerrainGeneration
             quad.RenderFullScreenQuad(this.terrainVisEffect);
         }
 
-        private double angle = 0.0;
         private void DrawTile(GameTime gameTime)
         {
 
-            if (fc.Frames % 20 == 1)
+            if (fc.Frames % 10 == 1)
             {
                 device.Textures[0] = null;
                 device.Textures[1] = null;
@@ -175,9 +184,9 @@ namespace TerrainGeneration
 
             device.Clear(new Color(0.8f, 0.88f, 0.92f));
 
-            float r = 1.0f;
-            angle += this.paused?0.0:gameTime.ElapsedGameTime.TotalSeconds * 0.1;
-            Vector3 eyePos = new Vector3(r * (float)Math.Cos(angle) + 0.5f, 0.6f, r * (float)Math.Sin(angle) + 0.5f);
+            
+            //angle += this.paused?0.0:gameTime.ElapsedGameTime.TotalSeconds * 0.1;
+            Vector3 eyePos = new Vector3((float)eyeradius * (float)Math.Cos(angle) + 0.5f, eyeheight, (float)eyeradius * (float)Math.Sin(angle) + 0.5f);
 
             //this.player.Position = this.terrain.ClampToGround(new Vector3(r * (float)Math.Cos(angle) + 1f, 0.0f, r * (float)Math.Sin(angle) + 1f));
             //this.player.Position = this.terrain.ClampToGround(this.player.Position);
@@ -241,7 +250,8 @@ namespace TerrainGeneration
                     this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
                     this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f,255.0f));
                     this.shadeTexData[i].G = (byte)((c.Loose * 8.0f).ClampInclusive(0.0f, 255.0f));
-                    this.shadeTexData[i].B = (byte)((c.MovingWater * 8.0f).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].B = (byte)((c.MovingWater * 1024.0f).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].A = (byte)((c.Water).ClampInclusive(0.0f, 255.0f));
                     i++;
                 }
             }

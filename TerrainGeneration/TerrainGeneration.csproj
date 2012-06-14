@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ErosionParticle.cs" />
+    <Compile Include="ErosionParticle2.cs" />
     <Compile Include="QuadRender.cs" />
     <Compile Include="TerrainGen.cs" />
     <Compile Include="TerrainGenerationVisualiser.cs" />

@@ -49,11 +49,16 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PatchTest.cs" />
+    <Compile Include="TileMathTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TerrainEngine\TerrainEngine.csproj">
       <Project>{88BBD512-A699-4A8D-A789-B6FC76FC5C57}</Project>
       <Name>TerrainEngine</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Utils\Utils.csproj">
+      <Project>{E7702A19-0578-47E3-B3DB-1853B8C57F6A}</Project>
+      <Name>Utils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

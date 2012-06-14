@@ -271,6 +271,7 @@ float4 GenerateCol(float3 p)
 	float4 colL2 = {0.41,0.39,0.16,1.0};
 
 	float4 colW = {0.7,0.8,1.0,1.0};
+	float4 colA = {1.0,0.0,0.0,1.0};
 
 	float4 s = tex2D(ShadeTexSampler,p.xy);
 	float h = SampleHeight(p.xy);
@@ -278,14 +279,17 @@ float4 GenerateCol(float3 p)
 	float looseblend = s.g * 4.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
-	col = lerp(col,colW,s.b);
+	if (s.b > 0.01){
+		col = lerp(col,colW,0.1 + s.b); // water
+	}
+	//col = lerp(col,colA,s.a);
 
 	float h1 = SampleHeight(float2(p.x,p.y-texel));
 	float h2 = SampleHeight(float2(p.x,p.y+texel));
 	float h3 = SampleHeight(float2(p.x-texel,p.y));
 	float h4 = SampleHeight(float2(p.x+texel,p.y));
 
-	float3 n = normalize(float3(h2-h1,h4-h3,2.0*texel));
+	float3 n = normalize(float3(h4-h3,h2-h1,2.0*texel));
 	//float3 l = normalize(float3(0.5,0.2,0.2));
 	
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
