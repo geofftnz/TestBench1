@@ -27,6 +27,14 @@ namespace Utils
             }
         }
 
+        public double TotalSeconds
+        {
+            get
+            {
+                return sw.Elapsed.TotalSeconds;
+            }
+        }
+
         public long Frames
         {
             get

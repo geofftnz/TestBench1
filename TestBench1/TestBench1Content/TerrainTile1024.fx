@@ -279,8 +279,8 @@ float4 GenerateCol(float3 p)
 	float looseblend = s.g * 4.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
-	if (s.b > 0.01){
-		col = lerp(col,colW,0.1 + s.b); // water
+	if (s.b > 0.002){
+		col = lerp(col,colW,0.1 + s.b*3.0); // water
 	}
 	//col = lerp(col,colA,s.a);
 

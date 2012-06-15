@@ -81,8 +81,8 @@ namespace TerrainGeneration
             this.TempDiffMap = new float[this.Width * this.Height];
 
             // init parameters
-            this.TerrainSlumpMaxHeightDifference = 1.0f;
-            this.TerrainSlumpMovementAmount = 0.02f;
+            this.TerrainSlumpMaxHeightDifference = 0.5f;
+            this.TerrainSlumpMovementAmount = 0.05f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
             this.WaterNumParticles = 2000;
@@ -207,6 +207,7 @@ namespace TerrainGeneration
             var rand = new Random();
 
             Func<int, float, float> LowestNeighbour = (i, h) => this.Map[i].WHeight < h ? this.Map[i].WHeight : h;
+            //Func<int, float, float> LowestNeighbourD = (i, h) => this.Map[i].WHeight * 0.707f < h ? this.Map[i].WHeight * 0.707f : h;
 
             foreach (var wp in this.WaterParticles)
             {
@@ -225,6 +226,12 @@ namespace TerrainGeneration
                     // add some flowing water to the terrain so we can see it
                     this.Map[celli].MovingWater += 0.001f;
 
+                    // always drop a little material
+                    //float drop = wp.CarryingAmount * 0.05f;
+                    //this.Map[celli].Loose += drop;
+                    //wp.CarryingAmount -= drop;
+
+
                     // get our current height
                     float h = this.Map[celli].Height;
 
@@ -233,6 +240,10 @@ namespace TerrainGeneration
                     lowestNeighbour = LowestNeighbour(C(cellx + 1, celly), h);
                     lowestNeighbour = LowestNeighbour(C(cellx, celly - 1), h);
                     lowestNeighbour = LowestNeighbour(C(cellx, celly + 1), h);
+                    lowestNeighbour = LowestNeighbour(C(cellx - 1, celly - 1), h);
+                    lowestNeighbour = LowestNeighbour(C(cellx - 1, celly + 1), h);
+                    lowestNeighbour = LowestNeighbour(C(cellx + 1, celly - 1), h);
+                    lowestNeighbour = LowestNeighbour(C(cellx + 1, celly + 1), h);
 
                     float ndiff = lowestNeighbour - h;
                     if (ndiff > 0f)
@@ -267,9 +278,8 @@ namespace TerrainGeneration
                         break;
                     }
 
-
                     // compute exit point and new cell coords
-                    var newPos = TileMath.TileIntersect(wp.Pos, new Vector2(fall.X,fall.Y), cellx, celly, out cellnx, out cellny);
+                    var newPos = TileMath.TileIntersect(wp.Pos, new Vector2(fall.X, fall.Y), cellx, celly, out cellnx, out cellny);
 
                     // if the intersection func has returned the same cell, we're stuck and need to reset
                     if (cellx == cellnx && celly == cellny)
@@ -284,28 +294,53 @@ namespace TerrainGeneration
 
                     ndiff = nh - h;
                     // check to see if we're being forced uphill. If we are we drop material to try and level with our new position. If we can't do that we reset.
+
                     if (ndiff > 0f)
                     {
                         if (wp.CarryingAmount > ndiff)
                         {
+                            float uphillDrop = ndiff * 0.5f;
                             // carrying more than difference -> fill hole
-                            this.Map[celli].Loose += ndiff;
-                            wp.CarryingAmount -= ndiff;
+                            this.Map[celli].Loose += uphillDrop;
+                            wp.CarryingAmount -= uphillDrop;
+
+                            // eat some material from the cell we're being forced into
+                            float uphillEat = ndiff * 0.2f;
+                            float nextcellLoose = this.Map[cellni].Loose;
+                            float nextcellHard = this.Map[cellni].Hard;
+
+                            if (uphillEat < nextcellLoose)
+                            {
+                                this.Map[cellni].Loose -= uphillEat;
+                                wp.CarryingAmount += uphillEat;
+                            }
+                            else
+                            {
+                                this.Map[cellni].Loose -= nextcellLoose;
+                                wp.CarryingAmount += nextcellLoose;
+                            }
                         }
                         else
                         {
                             // drop everything we have
                             this.Map[celli].Loose += wp.CarryingAmount;
-                            wp.CarryingAmount = 0f;
 
                             // stuck in hole, reset
                             needReset = true;
                             break;
                         }
+
+                        // collapse any material we've just deposited.
+                        CollapsePoint(cellx, celly, 0.1f);
+                    }
+                    else
+                    {
+                        float slope = (float)Math.Atan(-ndiff) / 1.570796f;
+
+                        // modify speed of particle
+                        wp.Speed = wp.Speed * 0.5f + 0.5f * slope;
                     }
 
-
-                    float slope = (float)Math.Atan(h-nh) / 1.570796f;
 
                     // calculate distance that we're travelling across cell.
                     float crossdistance = Vector2.Distance(wp.Pos, newPos);
@@ -316,13 +351,11 @@ namespace TerrainGeneration
                     //float slope = (float)Math.Atan2(hdiff, crossdistance) / 1.570796f;
 
                     // work out fraction of cell we're crossing, as a proportion of the length of the diagonal (root-2)
-                    //crossdistance /= 1.4142136f;
+                    crossdistance /= 1.4142136f;
 
-                    // modify speed of particle
-                    wp.Speed = wp.Speed * 0.5f + 0.5f * slope;
 
                     // calculate new carrying capacity
-                    wp.CarryingCapacity = 1.0f * wp.Speed;
+                    wp.CarryingCapacity = 2.0f * wp.Speed;
 
 
                     // if we're over our carrying capacity, start dropping material
@@ -334,6 +367,8 @@ namespace TerrainGeneration
                         // drop a portion of our material
                         this.Map[celli].Loose += cdiff;
                         wp.CarryingAmount -= cdiff;
+
+                        //CollapsePoint(cellx, celly, 0.1f);
                     }
                     else  // we're under our carrying capacity, so do some erosion
                     {
@@ -342,8 +377,10 @@ namespace TerrainGeneration
                         float loose = this.Map[celli].Loose;
                         float hard = this.Map[celli].Hard;
 
-                        float looseErodeAmount = (0.1f + wp.Speed) * 0.5f * crossdistance; // erosion coefficient for loose material
-                        float hardErodeAmount = (0.1f + wp.Speed) * 0.1f * crossdistance; // erosion coefficient for hard material
+                        float erosionFactor = ((0.1f + wp.Speed) * crossdistance) * (1f + this.Map[celli].MovingWater * 10.0f); // erode more where there is lots of water.
+
+                        float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
+                        float hardErodeAmount = 0.2f * erosionFactor; // erosion coefficient for hard material
 
                         // first of all, see if we can pick up any loose material.
                         if (loose > 0.0f)
@@ -386,6 +423,7 @@ namespace TerrainGeneration
 
                 if (needReset)
                 {
+                    this.Map[celli].Loose += wp.CarryingAmount;
                     wp.Reset(rand.Next(this.Width), rand.Next(this.Height));// reset particle
                 }
 
@@ -762,6 +800,58 @@ namespace TerrainGeneration
 
         }
 
+
+
+        private Func<Cell[], int, int, float, float, float> CollapseCellFunc = (m, ci, i, h, a) =>
+        {
+            float diff = (h - m[i].Height);
+
+            if (diff > m[ci].Loose)
+                diff = m[ci].Loose;
+
+            if (diff > 0f)
+            {
+                diff *= a;
+                m[i].Loose += diff;
+                return diff;
+            }
+            return 0f;
+        };
+
+        /// <summary>
+        /// Collapses loose material away from the specified point.
+        /// 
+        /// 
+        /// </summary>
+        /// <param name="cx"></param>
+        /// <param name="cy"></param>
+        /// <param name="amount"></param>
+        public void CollapsePoint(int cx, int cy, float amount)
+        {
+            int ci = C(cx, cy);
+            float h = this.Map[ci].Height;
+            float dh = 0f;
+            float amount2 = amount * 0.707f;
+
+            dh += CollapseCellFunc(this.Map, ci, C(cx - 1, cy), h, amount);
+            dh += CollapseCellFunc(this.Map, ci, C(cx + 1, cy), h, amount);
+            dh += CollapseCellFunc(this.Map, ci, C(cx, cy - 1), h, amount);
+            dh += CollapseCellFunc(this.Map, ci, C(cx, cy + 1), h, amount);
+            dh += CollapseCellFunc(this.Map, ci, C(cx - 1, cy - 1), h, amount2);
+            dh += CollapseCellFunc(this.Map, ci, C(cx - 1, cy + 1), h, amount2);
+            dh += CollapseCellFunc(this.Map, ci, C(cx + 1, cy - 1), h, amount2);
+            dh += CollapseCellFunc(this.Map, ci, C(cx + 1, cy + 1), h, amount2);
+
+            if (dh < this.Map[ci].Loose)
+            {
+                this.Map[ci].Loose -= dh;
+            }
+            else
+            {
+                this.Map[ci].Hard -= (dh - this.Map[ci].Loose);
+                this.Map[ci].Loose = 0f;
+            }
+        }
 
         #region utils
 

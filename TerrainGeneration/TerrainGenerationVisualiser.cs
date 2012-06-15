@@ -46,6 +46,7 @@ namespace TerrainGeneration
         private double angle = 0.0;
         private float eyeradius = 0.5f;
         private float eyeheight = 0.6f;
+        private double lastUpdateTime = 0;
 
 
 
@@ -164,8 +165,8 @@ namespace TerrainGeneration
 
         private void DrawTile(GameTime gameTime)
         {
-
-            if (fc.Frames % 10 == 1)
+            double totalSec = fc.TotalSeconds;
+            if (totalSec - this.lastUpdateTime > 2.0)
             {
                 device.Textures[0] = null;
                 device.Textures[1] = null;
@@ -173,7 +174,7 @@ namespace TerrainGeneration
                 //this.UpdateTexture();
 
                 this.UpdateTileData();
-               
+                this.lastUpdateTime = totalSec;
             }
 
 
