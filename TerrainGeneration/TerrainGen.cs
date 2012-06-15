@@ -59,7 +59,7 @@ namespace TerrainGeneration
             {
                 get
                 {
-                    return Hard + Loose; // +MovingWater;
+                    return Hard + Loose;// +MovingWater;
                 }
             }
         }
@@ -85,8 +85,8 @@ namespace TerrainGeneration
             this.TerrainSlumpMovementAmount = 0.05f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
-            this.WaterNumParticles = 2000;
-            this.WaterIterationsPerFrame = 40;
+            this.WaterNumParticles = 10000;
+            this.WaterIterationsPerFrame = 10;
 
             this.Iterations = 0;
 
@@ -130,15 +130,16 @@ namespace TerrainGeneration
         {
             this.Clear(0.0f);
             this.AddSimplexNoise(6, 0.1f / (float)this.Width, 2000.0f);
-
-            //this.AddSimplexNoise(9, 0.3f / (float)this.Width, 2000.0f, x => Math.Abs(x)); // really big hills
-
-            this.AddSimplexPowNoise(7, 0.13f / (float)this.Width, 8000.0f, 3.0f, x => Math.Abs(x));
-
-            //this.AddSimplexPowNoise(4, 1.7f / (float)this.Width, 500.0f, 4.0f, x => Math.Abs(x));
+            //this.AddSimplexPowNoise(7, 0.13f / (float)this.Width, 8000.0f, 3.0f, x => Math.Abs(x));
             this.AddSimplexNoise(9, 0.7f / (float)this.Width, 500.0f);
 
             this.AddLooseMaterial(10.0f);
+
+
+
+            //this.AddSimplexPowNoise(4, 1.7f / (float)this.Width, 500.0f, 4.0f, x => Math.Abs(x));
+            //this.AddSimplexNoise(9, 0.3f / (float)this.Width, 2000.0f, x => Math.Abs(x)); // really big hills
+
 
             //this.AddSimplexNoise(2, 0.1f, 1.0f);
 
@@ -355,7 +356,7 @@ namespace TerrainGeneration
 
 
                     // calculate new carrying capacity
-                    wp.CarryingCapacity = 2.0f * wp.Speed;
+                    wp.CarryingCapacity = 0.01f + 3.0f * wp.Speed;
 
 
                     // if we're over our carrying capacity, start dropping material
@@ -424,7 +425,7 @@ namespace TerrainGeneration
                 if (needReset)
                 {
                     this.Map[celli].Loose += wp.CarryingAmount;
-                    wp.Reset(rand.Next(this.Width), rand.Next(this.Height));// reset particle
+                    wp.Reset(rand.Next(this.Width), rand.Next(this.Height),rand);// reset particle
                 }
 
             }

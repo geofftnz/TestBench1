@@ -26,13 +26,25 @@ namespace TerrainGeneration
             Reset(x, y);
         }
 
-        public void Reset(int x, int y)
+        public void Reset(int x, int y, Random r)
         {
-            this.Pos = new Vector2((float)x + 0.5f, (float)y + 0.5f);
+            if (r != null)
+            {
+                this.Pos = new Vector2((float)x + 0.1f + (float)r.NextDouble() * 0.8f, (float)y + 0.1f + (float)r.NextDouble() * 0.8f);
+            }
+            else
+            {
+                this.Pos = new Vector2((float)x + 0.5f, (float)y + 0.5f);
+            }
           //  this.Vel = new Vector2(0.0f);
             this.CarryingAmount = 0.0f;
             this.CarryingCapacity = 0.0f;
             this.Speed = 0f;
+        }
+
+        public void Reset(int x, int y)
+        {
+            this.Reset(x, y, null);
         }
     }
 }

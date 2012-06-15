@@ -276,13 +276,14 @@ float4 GenerateCol(float3 p)
 	float4 s = tex2D(ShadeTexSampler,p.xy);
 	float h = SampleHeight(p.xy);
 
-	float looseblend = s.g * 4.0f;
+	float looseblend = s.g * 2.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
 	if (s.b > 0.002){
-		col = lerp(col,colW,0.1 + s.b*3.0); // water
+		col = lerp(col,colW,0.1 + s.b*2.0); // water
 	}
 	//col = lerp(col,colA,s.a);
+
 
 	float h1 = SampleHeight(float2(p.x,p.y-texel));
 	float h2 = SampleHeight(float2(p.x,p.y+texel));
@@ -328,6 +329,7 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 		//col.rgb = lerp(colH1,colH2,p.y * 4.0f) * l;
 		//col.a = 1.0f;
 		col = GenerateCol(p.xzy);
+		
 	}
 	else
 	{
