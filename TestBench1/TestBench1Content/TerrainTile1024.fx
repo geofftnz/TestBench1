@@ -282,18 +282,14 @@ float GetSmoothNormal(float2 p)
 	float h4 = SampleSmoothHeight(float2(p.x+t,p.y));
 
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
-
-	//float2 p0 = float2( floor(p.x/texel)*texel , floor(p.y/texel)*texel );
-	//float2 pf = (p - p0) / texel;
-//
-	//float3 n00 = GetNormal(p0);
-	//float3 n10 = GetNormal(p0 + float2(texel,0));
-	//float3 n01 = GetNormal(p0 + float2(0,texel));
-	//float3 n11 = GetNormal(p0 + float2(texel,texel));
-//
-	////return lerp(n00,n10,pf.x);
-	//return normalize(lerp(lerp(n00,n10,pf.x),lerp(n01,n11,pf.x),pf.y));
 }
+
+float GetSmoothNormal2(float h1,float h2,float h3,float h4)
+{
+	float t = texel * 0.5;
+	return normalize(float3(h4-h3,h2-h1,2.0*texel));
+}
+
 
 float contour(float h0, float h1,float h2, float h3, float h4, float contourscale)
 {
@@ -345,8 +341,14 @@ float4 GenerateCol(float3 p)
 
 	//col = lerp(col,colA,s.a);
 
+	float h1 = SampleSmoothHeight(float2(p.x,p.y-texel));
+	float h2 = SampleSmoothHeight(float2(p.x,p.y+texel));
+	float h3 = SampleSmoothHeight(float2(p.x-texel,p.y));
+	float h4 = SampleSmoothHeight(float2(p.x+texel,p.y));
+
 	//float3 n = GetNormal(p.xy);
-	float3 n = GetSmoothNormal(p.xy);
+	//float3 n = GetSmoothNormal(p.xy);
+	float3 n = GetSmoothNormal2(h1,h2,h3,h4);
 	//float3 l = normalize(float3(0.5,0.2,0.2));
 	
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);

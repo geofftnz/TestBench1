@@ -22,9 +22,9 @@ namespace TerrainGeneration
         public TerrainGen Terrain { get; set; }
 
         // texture to hold the bit of the terrain we're looking at (1024x1024)
-        private Texture2D VisTexture;
-        private int VisTextureWidth = 1024;
-        private int VisTextureHeight = 1024;
+        //private Texture2D VisTexture;
+        //private int VisTextureWidth = 1024;
+        //private int VisTextureHeight = 1024;
 
         // misc
         private FrameCounter fc = new FrameCounter();
@@ -49,6 +49,7 @@ namespace TerrainGeneration
         private float eyeradius = 0.5f;
         private float eyeheight = 0.6f;
         private double lastUpdateTime = 0;
+        private double tileUpdateInterval = 1.0;
 
         private Stopwatch stopwatch = new Stopwatch();
         private double generationSeconds = 0.3;
@@ -90,7 +91,8 @@ namespace TerrainGeneration
         public TerrainGenerationVisualiser()
         {
             this.Terrain = new TerrainGen(1024, 1024);
-            this.Terrain.InitTerrain1();
+            //this.Terrain.InitTerrain1();
+            this.Terrain.Clear(0.0f);
 
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -101,6 +103,8 @@ namespace TerrainGeneration
 
             this.walkCamera = new WalkCamera(this);
             this.Components.Add(this.walkCamera);
+
+            this.StatusMessage = "Press R to randomize terrain, or 1-9 to load a saved slot.";
         }
 
         protected override void Initialize()
@@ -127,8 +131,8 @@ namespace TerrainGeneration
             quad = new QuadRender(device);
 
             // initial load
-            this.CreateTexture(device);
-            this.UpdateTexture();
+            //this.CreateTexture(device);
+            //this.UpdateTexture();
 
             // terrain tile
             this.tile.LoadContent(device);
@@ -156,7 +160,7 @@ namespace TerrainGeneration
                     shiftTest = !((currKeyboard.IsKeyDown(Keys.LeftShift) || currKeyboard.IsKeyDown(Keys.RightShift)));
                 }
             }
-            return currKeyboard.IsKeyDown(k) && prevKeyboard.IsKeyUp(k) && shiftTest;
+            return currKeyboard.IsKeyDown(k) && !prevKeyboard.IsKeyDown(k) && shiftTest;
         }
 
         private bool WasPressed(Keys k)
@@ -182,6 +186,7 @@ namespace TerrainGeneration
                     try
                     {
                         this.Terrain.Save(filename);
+                        this.StatusMessage = string.Format("Saved to {0}",Path.GetFullPath(filename));
                     }
                     catch (Exception e)
                     {
@@ -193,12 +198,32 @@ namespace TerrainGeneration
                     try
                     {
                         this.Terrain.Load(filename);
+                        this.StatusMessage = string.Format("Loaded from {0}", Path.GetFullPath(filename));
                     }
                     catch (Exception e)
                     {
                         this.StatusMessage = string.Format("Load: {0}: {1}", e.GetType().Name, e.Message);
                     }
                 }
+            }
+
+            if (WasPressed(Keys.R))
+            {
+                this.Terrain.InitTerrain1();
+                this.StatusMessage = "New random terrain generated";
+            }
+
+            if (WasPressed(Keys.OemOpenBrackets))
+            {
+                this.tileUpdateInterval *= 1.25;
+                if (this.tileUpdateInterval > 10.0) this.tileUpdateInterval = 10.0;
+                this.StatusMessage = string.Format("Tile update interval now {0:0.00}s", this.tileUpdateInterval);
+            }
+            if (WasPressed(Keys.OemCloseBrackets))
+            {
+                this.tileUpdateInterval *= 0.75;
+                if (this.tileUpdateInterval < 0.1) this.tileUpdateInterval = 0.1;
+                this.StatusMessage = string.Format("Tile update interval now {0:0.00}s", this.tileUpdateInterval);
             }
 
 
@@ -250,6 +275,7 @@ namespace TerrainGeneration
             base.Draw(gameTime);
         }
 
+        /*
         private void Draw2DTerrain(GameTime gameTime)
         {
             this.projectionMatrix = Matrix.CreateOrthographic(1600f, 1200f, 0.0f, 1.0f);
@@ -274,12 +300,12 @@ namespace TerrainGeneration
             this.terrainVisEffect.CurrentTechnique = this.terrainVisEffect.Techniques["Relief"];
 
             quad.RenderFullScreenQuad(this.terrainVisEffect);
-        }
+        }*/
 
         private void DrawTile(GameTime gameTime)
         {
             double totalSec = fc.TotalSeconds;
-            if (totalSec - this.lastUpdateTime > 2.0 && !paused && !this.walkCamera.IsMoving)
+            if (totalSec - this.lastUpdateTime > tileUpdateInterval && !paused && !this.walkCamera.IsMoving)
             {
                 device.Textures[0] = null;
                 device.Textures[1] = null;
@@ -343,7 +369,7 @@ namespace TerrainGeneration
 
 
 
-
+        /*
         private void CreateTexture(GraphicsDevice d)
         {
             this.VisTexture = new Texture2D(d, this.VisTextureWidth, this.VisTextureHeight, false, SurfaceFormat.Vector4);
@@ -352,7 +378,7 @@ namespace TerrainGeneration
         private void UpdateTexture()
         {
             this.VisTexture.SetData(this.Terrain.Map);
-        }
+        }*/
 
         private void UpdateTileData()
         {

@@ -73,7 +73,7 @@ namespace TerrainGeneration
         public Cell[] Map { get; private set; }
         private float[] TempDiffMap;
 
-        private List<ErosionParticle> WaterParticlesOld = new List<ErosionParticle>();
+        //private List<ErosionParticle> WaterParticlesOld = new List<ErosionParticle>();
         private List<ErosionParticle2> WaterParticles = new List<ErosionParticle2>();
 
         public TerrainGen(int width, int height)
@@ -136,12 +136,15 @@ namespace TerrainGeneration
         public void InitTerrain1()
         {
             this.Clear(0.0f);
-            this.AddSimplexNoise(6, 0.1f / (float)this.Width, 2000.0f);
-            this.AddSimplexPowNoise(8, 0.05f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
-            this.AddSimplexNoise(9, 0.7f / (float)this.Width, 500.0f);
+            this.AddSimplexNoise(9, 0.1f / (float)this.Width, 2000.0f);
+            //this.AddSimplexPowNoise(3, 0.05f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
+
+            this.AddSimplexNoise(3, 0.7f / (float)this.Width, 100.0f, h => h, h => h * h);
+
+            this.AddSimplexNoise(6, 2.7f / (float)this.Width, 100.0f);
 
             this.AddLooseMaterial(5.0f);
-            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 3.0f);
+            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 5.0f);
 
 
 
@@ -166,13 +169,13 @@ namespace TerrainGeneration
             this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
 
             // fade water amount
-            if (this.Iterations % 8 == 0)
+            //if (this.Iterations % 8 == 0)
+            //{
+            for (int i = this.Iterations % 13; i < this.Width * this.Height; i += 13)
             {
-                for (int i = 0; i < this.Width * this.Height; i++)
-                {
-                    this.Map[i].MovingWater *= 0.8f;
-                }
+                this.Map[i].MovingWater *= 0.8f;
             }
+            //}
 
             this.Iterations++;
         }
@@ -525,7 +528,7 @@ namespace TerrainGeneration
             );
         }
 
-        public void AddSimplexNoise(int octaves, float scale, float amplitude, Func<float, float> transform)
+        public void AddSimplexNoise(int octaves, float scale, float amplitude, Func<float, float> transform, Func<float, float> postTransform)
         {
             var r = new Random();
 
@@ -547,7 +550,15 @@ namespace TerrainGeneration
                             //h += SimplexNoise.noise((float)rx + x * scale * (1 << j), (float)ry + y * scale * (1 << j), j * 3.3f) * (amplitude / ((1 << j) + 1));
                             h += transform(SimplexNoise.wrapnoise(s, t, (float)this.Width, (float)this.Height, rx, ry, (float)(scale * (1 << j))) * (float)(1.0 / ((1 << j) + 1)));
                         }
-                        this.Map[i].Hard += h * amplitude;
+
+                        if (postTransform != null)
+                        {
+                            this.Map[i].Hard += postTransform(h) * amplitude;
+                        }
+                        else
+                        {
+                            this.Map[i].Hard += h * amplitude;
+                        }
                         i++;
                     }
                 }
@@ -895,7 +906,7 @@ namespace TerrainGeneration
 
         public void Load(string filename)
         {
-            using (var fs = new FileStream(filename, FileMode.Open,FileAccess.Read,FileShare.None,256*1024))
+            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.None, 256 * 1024))
             {
                 using (var sr = new BinaryReader(fs))
                 {
@@ -913,10 +924,10 @@ namespace TerrainGeneration
                     if (w != this.Width || h != this.Height)
                     {
                         // TODO: handle size changes
-                        throw new Exception(string.Format("Terrain size {0}x{1} did not match generator size {2}x{3}",w,h,this.Width,this.Height));
+                        throw new Exception(string.Format("Terrain size {0}x{1} did not match generator size {2}x{3}", w, h, this.Width, this.Height));
                     }
 
-                    
+
 
                     for (int i = 0; i < this.Width * this.Height; i++)
                     {
@@ -925,7 +936,7 @@ namespace TerrainGeneration
                         this.Map[i].Water = sr.ReadSingle();
                         this.Map[i].MovingWater = sr.ReadSingle();
                     }
-                    
+
                     sr.Close();
                 }
                 fs.Close();
