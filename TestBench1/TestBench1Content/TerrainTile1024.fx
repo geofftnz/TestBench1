@@ -11,6 +11,8 @@ float4x4 View;
 float4x4 Projection;
 float3 Eye;
 float3 LightDir;
+float BoxMin;
+float BoxMax;
 
 
 //------- Texture Samplers --------
@@ -317,7 +319,22 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 
 	float4 col={0.0f,0.0f,1.0f,1.0f};
 	float3 rayDir = normalize(input.BoxCoord.xyz - Eye);
-	float3 boxEnter = GetFirstSceneIntersection(Eye, rayDir);
+	float3 boxEnter;
+	float4 col2;
+	
+	// check to see if we're inside the box
+	if (Eye.x >= 0.0 && Eye.x < 1.0 && Eye.z >= 0.0 && Eye.z < 1.0 && Eye.y >= BoxMin && Eye.y <= BoxMax)
+	{
+		boxEnter = Eye;
+		//col2 = float4(1,1,1,1);
+		//output.Colour = float4(1,1,0,1);
+		//return output;
+	}
+	else
+	{
+		boxEnter = GetFirstSceneIntersection(Eye, rayDir);
+		//col2 = float4(1,0.5,0.5,1);
+	}
 
 	float4 p = IntersectRayHeightMap( boxEnter, rayDir);
 
@@ -348,7 +365,7 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 	//col = lerp(fogcol,col,fogamount);
 
 	output.Depth = d;
-	output.Colour = lerp(fogcol,col,fogamount);
+	output.Colour = lerp(fogcol,col,fogamount);// * col2;
 
 	return output;
 }

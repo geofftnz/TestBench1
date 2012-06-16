@@ -144,6 +144,9 @@ namespace TerrainEngine
             effect.Parameters["Projection"].SetValue(projectionMatrix);
             effect.Parameters["LightDir"].SetValue(lightDirection);
 
+            effect.Parameters["BoxMin"].SetValue(this.BoundingBoxLowerCorner.Y);
+            effect.Parameters["BoxMax"].SetValue(this.BoundingBoxUpperCorner.Y);
+
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();

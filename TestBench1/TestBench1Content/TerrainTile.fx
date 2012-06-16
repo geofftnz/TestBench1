@@ -11,6 +11,8 @@ float4x4 View;
 float4x4 Projection;
 float3 Eye;
 float3 LightDir;
+float BoxMin;
+float BoxMax;
 
 
 //------- Texture Samplers --------

@@ -169,6 +169,15 @@ namespace TerrainGeneration
                 pos.Z += (float)(Math.Sin(this.AngleLeftRight + Math.PI * 2.5) * speed);
             }
 
+            if (currKeyboard.IsKeyDown(Keys.F))
+            {
+                this.EyeHeight *= 1.05f; 
+            }
+            if (currKeyboard.IsKeyDown(Keys.V))
+            {
+                this.EyeHeight *= 0.95f;
+            }
+
             this.Position = pos;
         }
 

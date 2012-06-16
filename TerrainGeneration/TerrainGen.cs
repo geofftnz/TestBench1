@@ -137,7 +137,8 @@ namespace TerrainGeneration
             this.AddSimplexPowNoise(8, 0.05f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
             this.AddSimplexNoise(9, 0.7f / (float)this.Width, 500.0f);
 
-            this.AddLooseMaterial(10.0f);
+            this.AddLooseMaterial(5.0f);
+            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 3.0f);
 
 
 
@@ -487,6 +488,34 @@ namespace TerrainGeneration
                             h += SimplexNoise.wrapnoise(s, t, (float)this.Width, (float)this.Height, rx, ry, (float)(scale * (1 << j))) * (float)(1.0 / ((1 << j) + 1));
                         }
                         this.Map[i].Hard += h * amplitude;
+                        i++;
+                    }
+                }
+            );
+        }
+        public void AddSimplexNoiseToLoose(int octaves, float scale, float amplitude)
+        {
+            var r = new Random();
+
+            float rx = (float)r.NextDouble();
+            float ry = (float)r.NextDouble();
+
+
+            Parallel.For(0, this.Height,
+                (y) =>
+                {
+                    int i = (int)y * this.Width;
+                    float s = (float)y / (float)this.Height;
+                    for (int x = 0; x < this.Width; x++)
+                    {
+                        float h = 0.0f;
+                        float t = (float)x / (float)this.Width;
+                        for (int j = 1; j <= octaves; j++)
+                        {
+                            //h += SimplexNoise.noise((float)rx + x * scale * (1 << j), (float)ry + y * scale * (1 << j), j * 3.3f) * (amplitude / ((1 << j) + 1));
+                            h += SimplexNoise.wrapnoise(s, t, (float)this.Width, (float)this.Height, rx, ry, (float)(scale * (1 << j))) * (float)(1.0 / ((1 << j) + 1));
+                        }
+                        this.Map[i].Loose += h * amplitude;
                         i++;
                     }
                 }
