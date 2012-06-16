@@ -77,6 +77,11 @@ namespace TerrainGeneration
         /// </summary>
         public float EyeHeight { get; set; }
 
+        /// <summary>
+        /// true when player is moving
+        /// </summary>
+        public bool IsMoving { get; set; }
+
 
         //private Vector3 forwardVector = new Vector3(1f, 0f, 0f);
 
@@ -127,6 +132,8 @@ namespace TerrainGeneration
         {
             base.Update(gameTime);
 
+            this.IsMoving = false;
+
             // process input
             prevMouse = currMouse;
             currMouse = Mouse.GetState();
@@ -152,30 +159,36 @@ namespace TerrainGeneration
             {
                 pos.X += (float)(Math.Cos(this.AngleLeftRight) * speed);
                 pos.Z += (float)(Math.Sin(this.AngleLeftRight) * speed);
+                this.IsMoving = true;
             }
             if (currKeyboard.IsKeyDown(Keys.S))
             {
                 pos.X -= (float)(Math.Cos(this.AngleLeftRight) * speed);
                 pos.Z -= (float)(Math.Sin(this.AngleLeftRight) * speed);
+                this.IsMoving = true;
             }
             if (currKeyboard.IsKeyDown(Keys.A))
             {
                 pos.X += (float)(Math.Cos(this.AngleLeftRight+Math.PI * 1.5) * speed);
                 pos.Z += (float)(Math.Sin(this.AngleLeftRight + Math.PI * 1.5) * speed);
+                this.IsMoving = true;
             }
             if (currKeyboard.IsKeyDown(Keys.D))
             {
                 pos.X += (float)(Math.Cos(this.AngleLeftRight + Math.PI * 2.5) * speed);
                 pos.Z += (float)(Math.Sin(this.AngleLeftRight + Math.PI * 2.5) * speed);
+                this.IsMoving = true;
             }
 
             if (currKeyboard.IsKeyDown(Keys.F))
             {
-                this.EyeHeight *= 1.05f; 
+                this.EyeHeight *= 1.05f;
+                this.IsMoving = true;
             }
             if (currKeyboard.IsKeyDown(Keys.V))
             {
                 this.EyeHeight *= 0.95f;
+                this.IsMoving = true;
             }
 
             this.Position = pos;

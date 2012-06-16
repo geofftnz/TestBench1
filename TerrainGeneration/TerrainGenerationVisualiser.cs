@@ -53,6 +53,9 @@ namespace TerrainGeneration
         private double generationSeconds = 0.3;
 
         private WalkCamera walkCamera;
+        private KeyboardState currKeyboard;
+        private KeyboardState prevKeyboard;
+
 
 
 
@@ -112,25 +115,28 @@ namespace TerrainGeneration
 
         protected override void Update(GameTime gameTime)
         {
+            prevKeyboard = currKeyboard;
+            currKeyboard = Keyboard.GetState();
 
-            var ks = Keyboard.GetState();
-
-            if (ks.IsKeyDown(Keys.Space))
+            if (currKeyboard.IsKeyDown(Keys.Space) && prevKeyboard.IsKeyUp(Keys.Space))
             {
                 this.paused = !this.paused;
             }
 
-            if (ks.IsKeyDown(Keys.Left)) { angle += 0.02; }
-            if (ks.IsKeyDown(Keys.Right)) { angle -= 0.02; }
-            if (ks.IsKeyDown(Keys.Up)) { eyeradius -= 0.05f; }
-            if (ks.IsKeyDown(Keys.Down)) { eyeradius += 0.05f; }
-            if (ks.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
-            if (ks.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
+            if (currKeyboard.IsKeyDown(Keys.Left)) { angle += 0.02; }
+            if (currKeyboard.IsKeyDown(Keys.Right)) { angle -= 0.02; }
+            if (currKeyboard.IsKeyDown(Keys.Up)) { eyeradius -= 0.05f; }
+            if (currKeyboard.IsKeyDown(Keys.Down)) { eyeradius += 0.05f; }
+            if (currKeyboard.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
+            if (currKeyboard.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
 
-            stopwatch.Restart();
-            this.Terrain.ModifyTerrain();
-            stopwatch.Stop();
-            generationSeconds = generationSeconds * 0.9 + 0.1 * stopwatch.Elapsed.TotalSeconds;
+            if (!paused && !this.walkCamera.IsMoving)
+            {
+                stopwatch.Restart();
+                this.Terrain.ModifyTerrain();
+                stopwatch.Stop();
+                generationSeconds = generationSeconds * 0.9 + 0.1 * stopwatch.Elapsed.TotalSeconds;
+            }
 
             base.Update(gameTime);
         }
@@ -180,7 +186,7 @@ namespace TerrainGeneration
         private void DrawTile(GameTime gameTime)
         {
             double totalSec = fc.TotalSeconds;
-            if (totalSec - this.lastUpdateTime > 2.0)
+            if (totalSec - this.lastUpdateTime > 2.0 && !paused && !this.walkCamera.IsMoving)
             {
                 device.Textures[0] = null;
                 device.Textures[1] = null;

@@ -247,10 +247,52 @@ float3 CalculateNormal(float3 p)
 float texel = 0.0009765625f;
 float SampleHeight(float2 p)
 {
-	//float4 cell = tex2D(HeightTexSampler, p);
-	//return (cell.r + cell.g) * texel; // scale to texel space.
 	float h = tex2Dlod(HeightTexSampler2, float4(p.x,p.y,0,0));
 	return h.r*4;
+}
+float SampleSmoothHeight(float2 p)
+{
+	float2 p0 = float2( floor(p.x/texel)*texel , floor(p.y/texel)*texel );
+	float2 pf = (p - p0) / texel;
+
+	float h00 = tex2Dlod(HeightTexSampler2, float4(p0.x,p0.y,0,0));
+	float h10 = tex2Dlod(HeightTexSampler2, float4(p0.x+texel,p0.y,0,0));
+	float h01 = tex2Dlod(HeightTexSampler2, float4(p0.x,p0.y+texel,0,0));
+	float h11 = tex2Dlod(HeightTexSampler2, float4(p0.x+texel,p0.y+texel,0,0));
+
+	return lerp(lerp(h00,h10,pf.x),lerp(h01,h11,pf.x),pf.y) * 4;
+}
+
+float3 GetNormal(float2 p)
+{
+	float h1 = SampleHeight(float2(p.x,p.y-texel));
+	float h2 = SampleHeight(float2(p.x,p.y+texel));
+	float h3 = SampleHeight(float2(p.x-texel,p.y));
+	float h4 = SampleHeight(float2(p.x+texel,p.y));
+
+	return normalize(float3(h4-h3,h2-h1,2.0*texel));
+}
+
+float GetSmoothNormal(float2 p)
+{
+	float t = texel * 0.5;
+	float h1 = SampleSmoothHeight(float2(p.x,p.y-t));
+	float h2 = SampleSmoothHeight(float2(p.x,p.y+t));
+	float h3 = SampleSmoothHeight(float2(p.x-t,p.y));
+	float h4 = SampleSmoothHeight(float2(p.x+t,p.y));
+
+	return normalize(float3(h4-h3,h2-h1,2.0*texel));
+
+	//float2 p0 = float2( floor(p.x/texel)*texel , floor(p.y/texel)*texel );
+	//float2 pf = (p - p0) / texel;
+//
+	//float3 n00 = GetNormal(p0);
+	//float3 n10 = GetNormal(p0 + float2(texel,0));
+	//float3 n01 = GetNormal(p0 + float2(0,texel));
+	//float3 n11 = GetNormal(p0 + float2(texel,texel));
+//
+	////return lerp(n00,n10,pf.x);
+	//return normalize(lerp(lerp(n00,n10,pf.x),lerp(n01,n11,pf.x),pf.y));
 }
 
 float contour(float h0, float h1,float h2, float h3, float h4, float contourscale)
@@ -262,6 +304,24 @@ float contour(float h0, float h1,float h2, float h3, float h4, float contourscal
 	float b4 = floor(h4*contourscale);
 
 	return (b0>b1 || b0>b2 || b0>b3 || b0>b4) ? 1.0:0.0;
+}
+
+float4 DebugColTexelFrac(float3 p)
+{
+	float2 p0 = float2( floor(p.x/texel)*texel , floor(p.y/texel)*texel );
+	float2 pf = (p - p0) / texel;
+	
+	float4 c00 = float4(1,1,0,1);
+	float4 c10 = float4(1,0,0,1);
+	float4 c01 = float4(0,1,0,1);
+	float4 c11 = float4(0,0,1,1);
+
+	//float4 c = lerp(c00,c10,pf.x);
+
+	//return lerp(float4(1,0,0,1),float4(0,0,1,1),pf.x);
+
+
+	return 	lerp(		lerp(c00,c10,pf.x),		lerp(c01,c11,pf.x),		pf.y);
 }
 
 float4 GenerateCol(float3 p)
@@ -285,13 +345,8 @@ float4 GenerateCol(float3 p)
 
 	//col = lerp(col,colA,s.a);
 
-
-	float h1 = SampleHeight(float2(p.x,p.y-texel));
-	float h2 = SampleHeight(float2(p.x,p.y+texel));
-	float h3 = SampleHeight(float2(p.x-texel,p.y));
-	float h4 = SampleHeight(float2(p.x+texel,p.y));
-
-	float3 n = normalize(float3(h4-h3,h2-h1,2.0*texel));
+	//float3 n = GetNormal(p.xy);
+	float3 n = GetSmoothNormal(p.xy);
 	//float3 l = normalize(float3(0.5,0.2,0.2));
 	
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
@@ -344,6 +399,8 @@ PixelToFrame PSRaycastTile(VertexShaderOutput input)
 		//float l = dot(n,LightDir)*0.2f+0.6f;
 		//col.rgb = lerp(colH1,colH2,p.y * 4.0f) * l;
 		//col.a = 1.0f;
+
+		//col = DebugColTexelFrac(p.xzy);
 		col = GenerateCol(p.xzy);
 		
 	}
