@@ -35,3 +35,6 @@ obj/x86
 # mstest test results
 TestResults
 *.trx
+
+#terrain saves
+*.ter
