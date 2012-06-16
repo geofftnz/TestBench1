@@ -40,6 +40,6 @@ namespace Utils
             while (x >= max) x -= max;
             return x;
         }
-
+        
     }
 }

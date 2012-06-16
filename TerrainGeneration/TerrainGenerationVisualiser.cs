@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Utils;
+using System.Diagnostics;
 
 namespace TerrainGeneration
 {
@@ -47,6 +48,9 @@ namespace TerrainGeneration
         private float eyeradius = 0.5f;
         private float eyeheight = 0.6f;
         private double lastUpdateTime = 0;
+
+        private Stopwatch stopwatch = new Stopwatch();
+        private double generationSeconds = 0.3;
 
 
 
@@ -118,6 +122,11 @@ namespace TerrainGeneration
             if (ks.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
             if (ks.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
 
+            stopwatch.Restart();
+            this.Terrain.ModifyTerrain();
+            stopwatch.Stop();
+            generationSeconds = generationSeconds * 0.9 + 0.1 * stopwatch.Elapsed.TotalSeconds;
+
             base.Update(gameTime);
         }
 
@@ -125,13 +134,13 @@ namespace TerrainGeneration
         {
             fc.Frame();
 
-            this.Terrain.ModifyTerrain();
 
             //Draw2DTerrain(gameTime);
             DrawTile(gameTime);
 
             sprites.Begin();
             sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Wheat);
+            sprites.DrawString(statusFont, string.Format("Generation: {0:###0.000}ms", this.generationSeconds * 1000.0), new Vector2(0, 20), Color.Wheat);
             sprites.End();
 
             base.Draw(gameTime);

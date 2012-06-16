@@ -47,7 +47,6 @@ namespace Utils
             {
                 // heading left
                 tx = ((float)Math.Floor(pos.X) - pos.X) / dir.X;
-                if (tx < 0f) throw new Exception("tx neg");
             }
             else
             {
@@ -66,7 +65,6 @@ namespace Utils
             {
                 // heading down
                 ty = ((float)Math.Floor(pos.Y) - pos.Y) / dir.Y;
-                if (ty < 0f) throw new Exception("tx neg");
             }
             else
             {
@@ -92,14 +90,14 @@ namespace Utils
                 if (dir.X < 0.0f)
                 {
                     nx--;
-                    exitpos.X = (float)Math.Floor(pos.X) - 0.1f;
+                    exitpos.X = (float)Math.Floor(pos.X) - 0.01f;
                 }
                 else
                 {
                     if (dir.X > 0.0f)
                     {
                         nx++;
-                        exitpos.X = (float)Math.Floor(pos.X) + 1.1f;
+                        exitpos.X = (float)Math.Floor(pos.X) + 1.01f;
                     }
                 }
             }
@@ -108,14 +106,14 @@ namespace Utils
                 if (dir.Y < 0.0f)
                 {
                     ny--;
-                    exitpos.Y = (float)Math.Floor(pos.Y)-0.1f;
+                    exitpos.Y = (float)Math.Floor(pos.Y)-0.01f;
                 }
                 else
                 {
                     if (dir.Y > 0.0f)
                     {
                         ny++;
-                        exitpos.Y = (float)Math.Floor(pos.Y) + 1.1f;
+                        exitpos.Y = (float)Math.Floor(pos.Y) + 1.01f;
                     }
                 }
             }
