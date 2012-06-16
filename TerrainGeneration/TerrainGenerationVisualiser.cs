@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Utils;
 using System.Diagnostics;
+using System.IO;
 
 namespace TerrainGeneration
 {
@@ -56,7 +57,34 @@ namespace TerrainGeneration
         private KeyboardState currKeyboard;
         private KeyboardState prevKeyboard;
 
+        private string savePath = "../../../../../Terrains";
+        private Dictionary<Keys, int> fileSaveSlots = new Dictionary<Keys, int>
+            {
+                {Keys.D1,1},
+                {Keys.D2,2},
+                {Keys.D3,3},
+                {Keys.D4,4},
+                {Keys.D5,5},
+                {Keys.D6,6},
+                {Keys.D7,7},
+                {Keys.D8,8},
+                {Keys.D9,9}
+            };
 
+        private string _statusMessage = "";
+        private string StatusMessage
+        {
+            get { 
+                return ((int)(DateTime.Now - this.statusMessageTime).TotalSeconds < this.statusMessageSeconds) ? _statusMessage : string.Empty; 
+            }
+            set
+            {
+                _statusMessage = value;
+                statusMessageTime = DateTime.Now;
+            }
+        }
+        private DateTime statusMessageTime = DateTime.Now;
+        private int statusMessageSeconds = 10;
 
 
         public TerrainGenerationVisualiser()
@@ -113,23 +141,82 @@ namespace TerrainGeneration
             base.UnloadContent();
         }
 
+        private bool WasPressed(Keys k, bool? shift)
+        {
+
+            bool shiftTest = true;
+            if (shift.HasValue)
+            {
+                if (shift.Value)
+                { // we want shift to be down
+                    shiftTest = ((currKeyboard.IsKeyDown(Keys.LeftShift) || currKeyboard.IsKeyDown(Keys.RightShift)));
+                }
+                else
+                { // shift must be up
+                    shiftTest = !((currKeyboard.IsKeyDown(Keys.LeftShift) || currKeyboard.IsKeyDown(Keys.RightShift)));
+                }
+            }
+            return currKeyboard.IsKeyDown(k) && prevKeyboard.IsKeyUp(k) && shiftTest;
+        }
+
+        private bool WasPressed(Keys k)
+        {
+            return WasPressed(k, null);
+        }
+
         protected override void Update(GameTime gameTime)
         {
             prevKeyboard = currKeyboard;
             currKeyboard = Keyboard.GetState();
 
-            if (currKeyboard.IsKeyDown(Keys.Space) && prevKeyboard.IsKeyUp(Keys.Space))
+            if (WasPressed(Keys.Space))
             {
                 this.paused = !this.paused;
             }
 
+            foreach (var k in this.fileSaveSlots.Keys)
+            {
+                string filename = Path.Combine(this.savePath, string.Format("Terrain{0}.pass1.ter", fileSaveSlots[k]));
+                if (WasPressed(k, true))
+                {
+                    try
+                    {
+                        this.Terrain.Save(filename);
+                    }
+                    catch (Exception e)
+                    {
+                        this.StatusMessage = string.Format("Save: {0}: {1}", e.GetType().Name, e.Message);
+                    }
+                }
+                if (WasPressed(k, false))
+                {
+                    try
+                    {
+                        this.Terrain.Load(filename);
+                    }
+                    catch (Exception e)
+                    {
+                        this.StatusMessage = string.Format("Load: {0}: {1}", e.GetType().Name, e.Message);
+                    }
+                }
+            }
+
+
+
+
+
+
+
+
+
+            /*
             if (currKeyboard.IsKeyDown(Keys.Left)) { angle += 0.02; }
             if (currKeyboard.IsKeyDown(Keys.Right)) { angle -= 0.02; }
             if (currKeyboard.IsKeyDown(Keys.Up)) { eyeradius -= 0.05f; }
             if (currKeyboard.IsKeyDown(Keys.Down)) { eyeradius += 0.05f; }
             if (currKeyboard.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
             if (currKeyboard.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
-
+            */
             if (!paused && !this.walkCamera.IsMoving)
             {
                 stopwatch.Restart();
@@ -152,6 +239,12 @@ namespace TerrainGeneration
             sprites.Begin();
             sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Wheat);
             sprites.DrawString(statusFont, string.Format("Generation: {0:###0.000}ms", this.generationSeconds * 1000.0), new Vector2(0, 20), Color.Wheat);
+
+            if (!string.IsNullOrWhiteSpace(this.StatusMessage))
+            {
+                sprites.DrawString(statusFont, this.StatusMessage, new Vector2(0, 40), Color.Red);
+            }
+
             sprites.End();
 
             base.Draw(gameTime);
@@ -204,7 +297,7 @@ namespace TerrainGeneration
 
             device.Clear(new Color(0.8f, 0.88f, 0.92f));
 
-            
+
             //angle += this.paused?0.0:gameTime.ElapsedGameTime.TotalSeconds * 0.1;
             Vector3 eyePos = new Vector3((float)eyeradius * (float)Math.Cos(angle) + 0.5f, eyeheight, (float)eyeradius * (float)Math.Sin(angle) + 0.5f);
 
@@ -272,7 +365,7 @@ namespace TerrainGeneration
                 {
                     var c = this.Terrain.Map[i];
                     this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
-                    this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f,255.0f));
+                    this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].G = (byte)((c.Loose * 8.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].B = (byte)((c.MovingWater * 4096.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].A = (byte)((c.Water).ClampInclusive(0.0f, 255.0f));

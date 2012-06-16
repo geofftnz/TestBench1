@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 using Utils;
 using Microsoft.Xna.Framework;
 using System.Threading;
+using System.IO;
+using System.IO.Compression;
 
 namespace TerrainGeneration
 {
     public class TerrainGen
     {
         const int NUMTHREADS = 3;
+        const int FILEMAGIC = 0x54455230;
 
         #region Generation Parameters
         public float TerrainSlumpMaxHeightDifference { get; set; }
@@ -212,7 +215,7 @@ namespace TerrainGeneration
             var up = new Vector3(0f, 0f, 1f);
             var rand = new Random();
             var tileDir = new Vector2(0);
-            
+
 
             Func<int, float, float> LowestNeighbour = (i, h) => this.Map[i].WHeight < h ? this.Map[i].WHeight : h;
 
@@ -433,7 +436,7 @@ namespace TerrainGeneration
                             this.Map[celli].Hard -= hardErodeAmount;
                             wp.CarryingAmount += hardErodeAmount; // loose material is less dense than hard, so make it greater.
                         }
-                        
+
                     }
                     //}
 
@@ -444,7 +447,7 @@ namespace TerrainGeneration
                     celli = cellni;
                 }
 
-                
+
                 // if we haven't moved further than a portion of the cells per run (manhattan distance), then decay carrying capacity faster
                 if (Math.Abs(cellx - cellox) + Math.Abs(celly - celloy) < CellsPerRun / 2)
                 {
@@ -454,14 +457,14 @@ namespace TerrainGeneration
                 if (needReset)
                 {
                     this.Map[celli].Loose += wp.CarryingAmount;
-                    wp.Reset(rand.Next(this.Width), rand.Next(this.Height),rand);// reset particle
+                    wp.Reset(rand.Next(this.Width), rand.Next(this.Height), rand);// reset particle
                 }
 
             }
 
         }
 
-     
+
         #endregion
 
         #region noise
@@ -695,8 +698,8 @@ namespace TerrainGeneration
         {
             float diff = (h - m[i].Height);
 
-            if (diff > m[ci].Loose*0.2f)
-                diff = m[ci].Loose*0.2f;
+            if (diff > m[ci].Loose * 0.2f)
+                diff = m[ci].Loose * 0.2f;
 
             if (diff > 0f)
             {
@@ -776,7 +779,7 @@ namespace TerrainGeneration
             dh += CollapseToCellFunc(this.Map, ci, C(cx + 1, cy + 1), h, amount2);
 
             this.Map[ci].Loose += dh;
-            
+
         }
 
         #region utils
@@ -849,10 +852,10 @@ namespace TerrainGeneration
             float xfrac = (x * (float)Width) - (float)xx;
             float yfrac = (y * (float)Height) - (float)yy;
 
-            float h00 = this.Map[C(xx,yy)].Height;
-            float h10 = this.Map[C(xx+1, yy)].Height;
-            float h01 = this.Map[C(xx, yy+1)].Height;
-            float h11 = this.Map[C(xx+1, yy+1)].Height;
+            float h00 = this.Map[C(xx, yy)].Height;
+            float h10 = this.Map[C(xx + 1, yy)].Height;
+            float h01 = this.Map[C(xx, yy + 1)].Height;
+            float h11 = this.Map[C(xx + 1, yy + 1)].Height;
 
             return MathHelper.Lerp(MathHelper.Lerp(h00, h10, xfrac), MathHelper.Lerp(h01, h11, xfrac), yfrac);
         }
@@ -862,6 +865,75 @@ namespace TerrainGeneration
             pos.Y = this.HeightAt(pos.X, pos.Z) / 4096.0f;
             return pos;
         }
+
+
+        #region File IO
+
+        public void Save(string filename)
+        {
+            using (var fs = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, 256 * 1024))
+            {
+                using (var sw = new BinaryWriter(fs))
+                {
+                    sw.Write(FILEMAGIC);
+                    sw.Write(this.Width);
+                    sw.Write(this.Height);
+
+                    for (int i = 0; i < this.Width * this.Height; i++)
+                    {
+                        sw.Write(this.Map[i].Hard);
+                        sw.Write(this.Map[i].Loose);
+                        sw.Write(this.Map[i].Water);
+                        sw.Write(this.Map[i].MovingWater);
+                    }
+
+                    sw.Close();
+                }
+                fs.Close();
+            }
+        }
+
+        public void Load(string filename)
+        {
+            using (var fs = new FileStream(filename, FileMode.Open,FileAccess.Read,FileShare.None,256*1024))
+            {
+                using (var sr = new BinaryReader(fs))
+                {
+                    int magic = sr.ReadInt32();
+                    if (magic != FILEMAGIC)
+                    {
+                        throw new Exception("Not a terrain file");
+                    }
+
+                    int w, h;
+
+                    w = sr.ReadInt32();
+                    h = sr.ReadInt32();
+
+                    if (w != this.Width || h != this.Height)
+                    {
+                        // TODO: handle size changes
+                        throw new Exception(string.Format("Terrain size {0}x{1} did not match generator size {2}x{3}",w,h,this.Width,this.Height));
+                    }
+
+                    
+
+                    for (int i = 0; i < this.Width * this.Height; i++)
+                    {
+                        this.Map[i].Hard = sr.ReadSingle();
+                        this.Map[i].Loose = sr.ReadSingle();
+                        this.Map[i].Water = sr.ReadSingle();
+                        this.Map[i].MovingWater = sr.ReadSingle();
+                    }
+                    
+                    sr.Close();
+                }
+                fs.Close();
+            }
+        }
+
+        #endregion
+
 
     }
 }
