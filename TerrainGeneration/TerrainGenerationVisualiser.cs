@@ -52,6 +52,8 @@ namespace TerrainGeneration
         private Stopwatch stopwatch = new Stopwatch();
         private double generationSeconds = 0.3;
 
+        private WalkCamera walkCamera;
+
 
 
         public TerrainGenerationVisualiser()
@@ -65,6 +67,9 @@ namespace TerrainGeneration
 
             this.tile = new TerrainEngine.TerrainTile(1024, 1024, new Vector3(0f, 0f, 0f), 1.0f);
             this.shadeTexData = new Color[this.Terrain.Width * this.Terrain.Height];
+
+            this.walkCamera = new WalkCamera(this);
+            this.Components.Add(this.walkCamera);
         }
 
         protected override void Initialize()
@@ -186,7 +191,6 @@ namespace TerrainGeneration
                 this.lastUpdateTime = totalSec;
             }
 
-
             this.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, device.Viewport.AspectRatio, 0.1f, 20.0f); // 5km view distance
 
             device.BlendState = BlendState.NonPremultiplied;
@@ -204,7 +208,11 @@ namespace TerrainGeneration
             //this.player.Position = eyePos;
             //this.viewMatrix = this.player.ViewMatrix;
 
-            Matrix viewMatrix = Matrix.CreateLookAt(eyePos, new Vector3(0.5f, 0.0f, 0.5f), new Vector3(0, 1, 0));
+            //Matrix viewMatrix = Matrix.CreateLookAt(eyePos, new Vector3(0.5f, 0.0f, 0.5f), new Vector3(0, 1, 0));
+
+            this.walkCamera.Position = this.Terrain.ClampToGround(this.walkCamera.Position);
+            var viewMatrix = this.walkCamera.ViewMatrix;
+            eyePos = this.walkCamera.EyePos;
 
 
 
@@ -260,7 +268,7 @@ namespace TerrainGeneration
                     this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
                     this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f,255.0f));
                     this.shadeTexData[i].G = (byte)((c.Loose * 8.0f).ClampInclusive(0.0f, 255.0f));
-                    this.shadeTexData[i].B = (byte)((c.MovingWater * 1024.0f).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].B = (byte)((c.MovingWater * 4096.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].A = (byte)((c.Water).ClampInclusive(0.0f, 255.0f));
                     i++;
                 }

@@ -82,8 +82,8 @@ namespace TerrainGeneration
 
 
             // init parameters
-            this.TerrainSlumpMaxHeightDifference = 1.0f;
-            this.TerrainSlumpMovementAmount = 0.05f;
+            this.TerrainSlumpMaxHeightDifference = 0.8f;
+            this.TerrainSlumpMovementAmount = 0.08f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
             this.WaterNumParticles = 5000;
@@ -134,7 +134,7 @@ namespace TerrainGeneration
         {
             this.Clear(0.0f);
             this.AddSimplexNoise(6, 0.1f / (float)this.Width, 2000.0f);
-            this.AddSimplexPowNoise(7, 0.13f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
+            this.AddSimplexPowNoise(8, 0.05f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
             this.AddSimplexNoise(9, 0.7f / (float)this.Width, 500.0f);
 
             this.AddLooseMaterial(10.0f);
@@ -387,14 +387,14 @@ namespace TerrainGeneration
 
 
                     // calculate new carrying capacity
-                    wp.CarryingCapacity = (0.01f + 3.0f * wp.Speed) * (1.0f - wp.CarryingDecay);
+                    wp.CarryingCapacity = (10.8f * wp.Speed) * (1.0f - wp.CarryingDecay);
 
 
                     // if we're over our carrying capacity, start dropping material
                     float cdiff = wp.CarryingAmount - wp.CarryingCapacity;
                     if (cdiff > 0.0f)
                     {
-                        cdiff *= 0.5f * crossdistance; // amount to drop
+                        cdiff *= 0.8f * crossdistance; // amount to drop
 
                         // drop a portion of our material
                         this.Map[cellni].Loose += cdiff;  // drop at new location
@@ -409,10 +409,10 @@ namespace TerrainGeneration
                         float loose = this.Map[celli].Loose;
                         float hard = this.Map[celli].Hard;
 
-                        float erosionFactor = ((0.1f + wp.Speed) * crossdistance) * (1f + this.Map[celli].MovingWater * 20.0f); // erode more where there is lots of water.
+                        float erosionFactor = ((0.02f + wp.Speed) * crossdistance) * (1f + this.Map[celli].MovingWater * 20.0f); // erode more where there is lots of water.
 
                         float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
-                        float hardErodeAmount = 0.2f * erosionFactor; // erosion coefficient for hard material
+                        float hardErodeAmount = 0.3f * erosionFactor; // erosion coefficient for hard material
 
                         // first of all, see if we can pick up any loose material.
                         if (loose > 0.0f)
@@ -811,6 +811,28 @@ namespace TerrainGeneration
         }
 
         #endregion
+
+        public float HeightAt(float x, float y)
+        {
+            int xx = (int)(x * this.Width);
+            int yy = (int)(y * this.Height);
+
+            float xfrac = (x * (float)Width) - (float)xx;
+            float yfrac = (y * (float)Height) - (float)yy;
+
+            float h00 = this.Map[C(xx,yy)].Height;
+            float h10 = this.Map[C(xx+1, yy)].Height;
+            float h01 = this.Map[C(xx, yy+1)].Height;
+            float h11 = this.Map[C(xx+1, yy+1)].Height;
+
+            return MathHelper.Lerp(MathHelper.Lerp(h00, h10, xfrac), MathHelper.Lerp(h01, h11, xfrac), yfrac);
+        }
+
+        public Vector3 ClampToGround(Vector3 pos)
+        {
+            pos.Y = this.HeightAt(pos.X, pos.Z) / 4096.0f;
+            return pos;
+        }
 
     }
 }

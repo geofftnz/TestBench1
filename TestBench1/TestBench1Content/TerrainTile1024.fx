@@ -279,9 +279,8 @@ float4 GenerateCol(float3 p)
 	float looseblend = s.g * 2.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
-	if (s.b > 0.004){
-		col = lerp(col,colW,0.1 + s.b*0.5); // water
-	}
+	col = lerp(col,colW,clamp(s.b*s.b*3.0,0,0.3)); // water
+
 	//col = lerp(col,colA,s.a);
 
 
@@ -296,9 +295,9 @@ float4 GenerateCol(float3 p)
 	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
 	col *= (0.3 + 0.7 * diffuse);
 
-	float cscale = 10.0f;
-	col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
-	col.r += contour(h,h1,h2,h3,h4,cscale) * 0.1;
+	//float cscale = 10.0f;
+	//col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
+	//col.r += contour(h,h1,h2,h3,h4,cscale) * 0.1;
 
 	col.a = 1.0f;
 
