@@ -58,7 +58,7 @@ namespace TerrainGeneration
             /// </summary>
             public float Loose;
             /// <summary>
-            /// Standing water - will flow unrestricted
+            /// Standing water - will flow unrestricted NOTE currently used for erosion amount.
             /// </summary>
             public float Water;
             /// <summary>
