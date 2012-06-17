@@ -75,8 +75,9 @@ namespace TerrainGeneration
         private string _statusMessage = "";
         private string StatusMessage
         {
-            get { 
-                return ((int)(DateTime.Now - this.statusMessageTime).TotalSeconds < this.statusMessageSeconds) ? _statusMessage : string.Empty; 
+            get
+            {
+                return ((int)(DateTime.Now - this.statusMessageTime).TotalSeconds < this.statusMessageSeconds) ? _statusMessage : string.Empty;
             }
             set
             {
@@ -186,7 +187,7 @@ namespace TerrainGeneration
                     try
                     {
                         this.Terrain.Save(filename);
-                        this.StatusMessage = string.Format("Saved to {0}",Path.GetFullPath(filename));
+                        this.StatusMessage = string.Format("Saved to {0}", Path.GetFullPath(filename));
                     }
                     catch (Exception e)
                     {
@@ -391,10 +392,11 @@ namespace TerrainGeneration
                 {
                     var c = this.Terrain.Map[i];
                     this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
-                    this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
+                    //this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].G = (byte)((c.Loose * 8.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].B = (byte)((c.MovingWater * 4096.0f).ClampInclusive(0.0f, 255.0f));
-                    this.shadeTexData[i].A = (byte)((c.Water).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].A = (byte)((c.Water * 32f).ClampInclusive(0.0f, 255.0f));  // erosion rate
+                    this.shadeTexData[i].R = (byte)((c.Carrying * 32f).ClampInclusive(0.0f, 255.0f)); // carrying capacity
                     i++;
                 }
             }

@@ -329,7 +329,7 @@ float4 GenerateCol(float3 p)
 	float4 colL2 = {0.41,0.39,0.16,1.0};
 
 	float4 colW = {0.7,0.8,1.0,1.0};
-	float4 colA = {1.0,0.0,0.0,1.0};
+	//float4 colA = {1.0,0.3,0.0,1.0};
 
 	float4 s = tex2D(ShadeTexSampler,p.xy);
 	float h = SampleHeight(p.xy);
@@ -337,7 +337,24 @@ float4 GenerateCol(float3 p)
 	float looseblend = s.g * 2.0f;
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
-	col = lerp(col,colW,clamp(s.b*s.b*3.0,0,0.3)); // water
+	float4 colW0 = {0.325,0.498,0.757,1.0};  // blue water
+	float4 colW1 = {0.659,0.533,0.373,1.0};  // dirty water
+	float4 colW2 = {1.4,1.4,1.4,1.0}; // white water
+
+	colW = lerp(colW0,colW1,clamp(s.r*4.0,0,1));  // make water dirty->clean
+	colW = lerp(colW,colW2,s.a*0.2);  // white water
+
+	// water colour is a mix of carrying amount and erosion rate
+	//colW.b = 0.4;
+	//colW.r = s.a; // red = erosion rate
+	//colW.g = s.r*2; // green = carrying amount
+
+	// water colour: carrying amount lerps between blue and brown (clear->dirty)
+	// erosion rate is similar to speed -> lerp to white water
+
+
+	col = lerp(col,colW,clamp(s.b*s.b*8.0,0,0.6)); // water
+	//col = lerp(col, colA, s.a);
 
 	//col = lerp(col,colA,s.a);
 

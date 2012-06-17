@@ -24,6 +24,18 @@ namespace TerrainGeneration
 
         public int WaterNumParticles { get; set; }
         public int WaterIterationsPerFrame { get; set; }
+        public float WaterCarryingAmountDecayPerRun { get; set; }
+        public float WaterDepositWaterCollapseAmount { get; set; }
+        public float WaterSpeedLowpassAmount { get; set; }
+        public float WaterCarryingCapacitySpeedCoefficient { get; set; } // 10.8
+        public float WaterMaxCarryingCapacity { get; set; } // 1.0
+        public float WaterProportionToDropOnOverCapacity { get; set; } // 0.8
+        public float WaterErosionSpeedCoefficientMin { get; set; }  // 0.02
+        public float WaterErosionSpeedCoefficient { get; set; } // 1.0
+        public float WaterErosionWaterDepthMultiplier { get; set; } // 20.0
+        public float WaterErosionHardErosionFactor { get; set; }  // 0.3
+        public float WaterErosionCollapseToAmount { get; set; } // 0.02f
+        public float WaterErosionMinSpeed { get; set; }
         #endregion
 
         public int Iterations { get; set; }
@@ -47,8 +59,14 @@ namespace TerrainGeneration
             public float Water;
             /// <summary>
             /// Non-height component indicating how much flowing water is over this tile.
+            /// Also used to indicate material being carried
             /// </summary>
             public float MovingWater;
+
+
+            // carrying capacity
+            public float Carrying;
+
 
             public float Height
             {
@@ -85,12 +103,25 @@ namespace TerrainGeneration
 
 
             // init parameters
-            this.TerrainSlumpMaxHeightDifference = 0.8f;
+            this.TerrainSlumpMaxHeightDifference = 1.8f;
             this.TerrainSlumpMovementAmount = 0.08f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
             this.WaterNumParticles = 5000;
             this.WaterIterationsPerFrame = 20;
+            this.WaterCarryingAmountDecayPerRun = 1.2f;
+            this.WaterDepositWaterCollapseAmount = 0.01f;  // 0.05
+            this.WaterSpeedLowpassAmount = 0.8f;
+            this.WaterCarryingCapacitySpeedCoefficient = 5.0f;  // 10
+            this.WaterMaxCarryingCapacity = 2.0f;
+            this.WaterProportionToDropOnOverCapacity = 0.6f;  // 0.8
+            this.WaterErosionSpeedCoefficientMin = 0.02f;
+            this.WaterErosionSpeedCoefficient = 1.0f;  // 1
+            this.WaterErosionWaterDepthMultiplier = 5.0f;  // 20
+            this.WaterErosionHardErosionFactor = 0.3f;
+            this.WaterErosionCollapseToAmount = 0.02f;
+            this.WaterErosionMinSpeed = 0.05f;
+
 
             this.Iterations = 0;
 
@@ -143,8 +174,8 @@ namespace TerrainGeneration
 
             this.AddSimplexNoise(6, 2.7f / (float)this.Width, 100.0f);
 
-            this.AddLooseMaterial(5.0f);
-            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 5.0f);
+            this.AddLooseMaterial(30.0f);
+            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 10.0f);
 
 
 
@@ -174,6 +205,8 @@ namespace TerrainGeneration
             for (int i = this.Iterations % 13; i < this.Width * this.Height; i += 13)
             {
                 this.Map[i].MovingWater *= 0.8f;
+                this.Map[i].Water *= 0.8f;
+                this.Map[i].Carrying *= 0.8f;
             }
             //}
 
@@ -210,6 +243,9 @@ namespace TerrainGeneration
 
         #region Water
 
+
+
+
         public void RunWater2(int CellsPerRun)
         {
             // This will probably be single-thread only due to extensive modification of the heightmap.
@@ -232,7 +268,9 @@ namespace TerrainGeneration
                 int cellox = cellx, celloy = celly; // check for oscillation in a small area
                 bool needReset = false;
 
-                wp.CarryingDecay *= 1.2f;  //1.04
+
+
+                wp.CarryingDecay *= this.WaterCarryingAmountDecayPerRun;  //1.04
                 if (wp.CarryingDecay >= 1.0f)
                 {
                     this.Map[celli].Loose = wp.CarryingAmount;
@@ -245,6 +283,7 @@ namespace TerrainGeneration
 
                     // add some flowing water to the terrain so we can see it
                     this.Map[celli].MovingWater += 0.001f;
+                    this.Map[celli].Carrying = this.Map[celli].Carrying * 0.5f + 0.5f * wp.CarryingAmount;  // vis for carrying amount
 
                     // get our current height
                     float h = this.Map[celli].WHeight;
@@ -374,16 +413,18 @@ namespace TerrainGeneration
                             break;
                         }
 
+
                         // collapse any material we've just deposited.
-                        CollapseFrom(cellx, celly, 0.05f);
+                        //CollapseFrom(cellx, celly, this.WaterDepositWaterCollapseAmount);
                     }
                     else
                     {
                         float slope = (float)Math.Atan(-ndiff) / 1.570796f;
 
                         // modify speed of particle
-                        wp.Speed = wp.Speed * 0.5f + 0.5f * slope;
+                        wp.Speed = wp.Speed * this.WaterSpeedLowpassAmount + (1.0f - this.WaterSpeedLowpassAmount) * slope;
                     }
+
 
 
                     // calculate distance that we're travelling across cell.
@@ -393,21 +434,25 @@ namespace TerrainGeneration
                     crossdistance /= 1.4142136f;
 
 
-                    // calculate new carrying capacity
-                    wp.CarryingCapacity = (10.8f * wp.Speed) * (1.0f - wp.CarryingDecay);
 
+                    // calculate new carrying capacity
+                    wp.CarryingCapacity = (this.WaterCarryingCapacitySpeedCoefficient * wp.Speed) * (1.0f - wp.CarryingDecay);
+                    if (wp.CarryingCapacity > this.WaterMaxCarryingCapacity)
+                    {
+                        wp.CarryingCapacity = this.WaterMaxCarryingCapacity;
+                    }
 
                     // if we're over our carrying capacity, start dropping material
                     float cdiff = wp.CarryingAmount - wp.CarryingCapacity;
                     if (cdiff > 0.0f)
                     {
-                        cdiff *= 0.8f * crossdistance; // amount to drop
+                        cdiff *= this.WaterProportionToDropOnOverCapacity * crossdistance; // amount to drop
 
                         // drop a portion of our material
                         this.Map[cellni].Loose += cdiff;  // drop at new location
                         wp.CarryingAmount -= cdiff;
 
-                        //CollapseFrom(cellx, celly, 0.1f);
+                        //CollapseFrom(cellx, celly, this.WaterDepositWaterCollapseAmount);
                     }
                     else  // we're under our carrying capacity, so do some erosion
                     {
@@ -416,30 +461,51 @@ namespace TerrainGeneration
                         float loose = this.Map[celli].Loose;
                         float hard = this.Map[celli].Hard;
 
-                        float erosionFactor = ((0.02f + wp.Speed) * crossdistance) * (1f + this.Map[celli].MovingWater * 20.0f); // erode more where there is lots of water.
 
-                        float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
-                        float hardErodeAmount = 0.3f * erosionFactor; // erosion coefficient for hard material
-
-                        // first of all, see if we can pick up any loose material.
-                        if (loose > 0.0f)
+                        if (wp.Speed > this.WaterErosionMinSpeed)
                         {
-                            if (looseErodeAmount > loose)
+                            float speed2 = wp.Speed - this.WaterErosionMinSpeed;
+                            //speed2 *= speed2;
+
+                            float erosionFactor = 
+                                ((this.WaterErosionSpeedCoefficientMin + speed2) * crossdistance * this.WaterErosionSpeedCoefficient) * // more speed = more erosion.
+                                (1f + this.Map[celli].MovingWater * this.WaterErosionWaterDepthMultiplier) *  // erode more where there is lots of water.
+                                (1.0f - wp.CarryingDecay*1.1f); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
+
+                            float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
+                            //float hardErodeAmount = erosionFactor; // erosion coefficient for hard material
+
+                            //this.Map[celli].Water = this.Map[celli].Water * 0.5f + 0.5f * erosionFactor;  // vis for erosion factor
+
+                            // first of all, see if we can pick up any loose material.
+                            if (loose > 0.0f)
                             {
-                                looseErodeAmount = loose;
+                                if (looseErodeAmount > loose)
+                                {
+                                    looseErodeAmount = loose;
+                                }
+
+                                this.Map[celli].Loose -= looseErodeAmount;
+                                wp.CarryingAmount += looseErodeAmount;
+
+                                this.Map[celli].Water += looseErodeAmount;
+
+                                CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
                             }
 
-                            this.Map[celli].Loose -= looseErodeAmount;
-                            wp.CarryingAmount += looseErodeAmount;
+                            // if we've got any erosion potential left, use it
+                            float hardErodeAmount = (erosionFactor - looseErodeAmount) * this.WaterErosionHardErosionFactor;
 
-                            CollapseTo(cellx, celly, 0.02f);
-                        }
-                        else  // we're down to hard material
-                        {
-                            this.Map[celli].Hard -= hardErodeAmount;
-                            wp.CarryingAmount += hardErodeAmount; // loose material is less dense than hard, so make it greater.
-                        }
+                            if (hardErodeAmount > 0.0f)
+                            {
+                                this.Map[celli].Hard -= hardErodeAmount;
+                                wp.CarryingAmount += hardErodeAmount; // loose material is less dense than hard, so make it greater.
 
+                                this.Map[celli].Water += hardErodeAmount;
+
+                                CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
+                            }
+                        }
                     }
                     //}
 
