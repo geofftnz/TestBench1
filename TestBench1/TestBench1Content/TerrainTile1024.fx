@@ -286,7 +286,6 @@ float GetSmoothNormal(float2 p)
 
 float GetSmoothNormal2(float h1,float h2,float h3,float h4)
 {
-	float t = texel * 0.5;
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
 
@@ -358,18 +357,19 @@ float4 GenerateCol(float3 p)
 
 	//col = lerp(col,colA,s.a);
 
-	float h1 = SampleSmoothHeight(float2(p.x,p.y-texel));
-	float h2 = SampleSmoothHeight(float2(p.x,p.y+texel));
-	float h3 = SampleSmoothHeight(float2(p.x-texel,p.y));
-	float h4 = SampleSmoothHeight(float2(p.x+texel,p.y));
+	float nt = texel * 0.5;
+	float h1 = SampleSmoothHeight(float2(p.x,p.y-nt));
+	float h2 = SampleSmoothHeight(float2(p.x,p.y+nt));
+	float h3 = SampleSmoothHeight(float2(p.x-nt,p.y));
+	float h4 = SampleSmoothHeight(float2(p.x+nt,p.y));
 
 	//float3 n = GetNormal(p.xy);
 	//float3 n = GetSmoothNormal(p.xy);
 	float3 n = GetSmoothNormal2(h1,h2,h3,h4);
 	//float3 l = normalize(float3(0.5,0.2,0.2));
 	
-	float diffuse = clamp(dot(n,LightDir)*0.5+0.5,0,1);
-	col *= (0.3 + 0.7 * diffuse);
+	float diffuse = clamp(dot(n,LightDir) * 0.5 + 0.5,0,1);
+	col *= (0.4 + 0.6 * diffuse);
 
 	//float cscale = 10.0f;
 	//col.r += contour(h,h1,h2,h3,h4,cscale*5) * 0.1;
