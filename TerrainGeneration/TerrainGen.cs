@@ -22,6 +22,10 @@ namespace TerrainGeneration
         public float TerrainSlumpMovementAmount { get; set; }
         public int TerrainSlumpSamplesPerFrame { get; set; }
 
+        public float TerrainSlump2MaxHeightDifference { get; set; }
+        public float TerrainSlump2MovementAmount { get; set; }
+        public int TerrainSlump2SamplesPerFrame { get; set; }
+
         public int WaterNumParticles { get; set; }
         public int WaterIterationsPerFrame { get; set; }
         public float WaterCarryingAmountDecayPerRun { get; set; }
@@ -103,10 +107,18 @@ namespace TerrainGeneration
 
 
             // init parameters
+
+            // Slump loose slopes - general case
             this.TerrainSlumpMaxHeightDifference = 1.8f;
-            this.TerrainSlumpMovementAmount = 0.08f;
+            this.TerrainSlumpMovementAmount = 0.05f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
+            // Slump loose slopes - rare case
+            this.TerrainSlump2MaxHeightDifference = 0.6f;
+            this.TerrainSlump2MovementAmount = 0.1f;
+            this.TerrainSlump2SamplesPerFrame = 500;
+
+            // Water erosion
             this.WaterNumParticles = 5000;
             this.WaterIterationsPerFrame = 20;
             this.WaterCarryingAmountDecayPerRun = 1.2f;
@@ -174,8 +186,8 @@ namespace TerrainGeneration
 
             this.AddSimplexNoise(6, 2.7f / (float)this.Width, 100.0f);
 
-            this.AddLooseMaterial(30.0f);
-            this.AddSimplexNoiseToLoose(7, 17.7f / (float)this.Width, 10.0f);
+            this.AddLooseMaterial(10.0f);
+            this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 5.0f);
 
 
 
@@ -198,6 +210,7 @@ namespace TerrainGeneration
         {
             this.RunWater2(this.WaterIterationsPerFrame);
             this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
+            this.Slump(this.TerrainSlump2MaxHeightDifference, this.TerrainSlump2MovementAmount, this.TerrainSlump2SamplesPerFrame);
 
             // fade water amount
             //if (this.Iterations % 8 == 0)
@@ -273,7 +286,7 @@ namespace TerrainGeneration
                 wp.CarryingDecay *= this.WaterCarryingAmountDecayPerRun;  //1.04
                 if (wp.CarryingDecay >= 1.0f)
                 {
-                    this.Map[celli].Loose = wp.CarryingAmount;
+                    this.Map[celli].Loose += wp.CarryingAmount;
                     wp.Reset(rand.Next(this.Width), rand.Next(this.Height), rand);// reset particle
                 }
 
@@ -385,26 +398,10 @@ namespace TerrainGeneration
                     {
                         if (wp.CarryingAmount > ndiff)
                         {
-                            float uphillDrop = ndiff;// *0.5f;
+                            float uphillDrop = ndiff;
                             // carrying more than difference -> fill hole
                             this.Map[celli].Loose += uphillDrop;
                             wp.CarryingAmount -= uphillDrop;
-                            /*
-                            // eat some material from the cell we're being forced into
-                            float uphillEat = ndiff * 0.2f;
-                            float nextcellLoose = this.Map[cellni].Loose;
-                            float nextcellHard = this.Map[cellni].Hard;
-
-                            if (uphillEat < nextcellLoose)
-                            {
-                                this.Map[cellni].Loose -= uphillEat;
-                                wp.CarryingAmount += uphillEat;
-                            }
-                            else
-                            {
-                                this.Map[cellni].Loose -= nextcellLoose;
-                                wp.CarryingAmount += nextcellLoose;
-                            }*/
                         }
                         else
                         {
@@ -412,8 +409,6 @@ namespace TerrainGeneration
                             needReset = true;
                             break;
                         }
-
-
                         // collapse any material we've just deposited.
                         //CollapseFrom(cellx, celly, this.WaterDepositWaterCollapseAmount);
                     }
@@ -425,15 +420,11 @@ namespace TerrainGeneration
                         wp.Speed = wp.Speed * this.WaterSpeedLowpassAmount + (1.0f - this.WaterSpeedLowpassAmount) * slope;
                     }
 
-
-
                     // calculate distance that we're travelling across cell.
                     float crossdistance = Vector2.Distance(wp.Pos, newPos);
 
                     // work out fraction of cell we're crossing, as a proportion of the length of the diagonal (root-2)
                     crossdistance /= 1.4142136f;
-
-
 
                     // calculate new carrying capacity
                     wp.CarryingCapacity = (this.WaterCarryingCapacitySpeedCoefficient * wp.Speed) * (1.0f - wp.CarryingDecay);
@@ -467,10 +458,17 @@ namespace TerrainGeneration
                             float speed2 = wp.Speed - this.WaterErosionMinSpeed;
                             //speed2 *= speed2;
 
-                            float erosionFactor = 
+                            float erosionFactor =
                                 ((this.WaterErosionSpeedCoefficientMin + speed2) * crossdistance * this.WaterErosionSpeedCoefficient) * // more speed = more erosion.
                                 (1f + this.Map[celli].MovingWater * this.WaterErosionWaterDepthMultiplier) *  // erode more where there is lots of water.
-                                (1.0f - wp.CarryingDecay*1.1f); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
+                                (1.0f - wp.CarryingDecay * 1.1f); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
+
+                            // we can only erode the difference between our height and our lowest neighbour.
+                            //erosionFactor = erosionFactor.ClampInclusive(0f, (h - lowestNeighbour) * 3.0f);
+                            //if (erosionFactor > (h - lowestNeighbour))
+                            //{
+                            //    erosionFactor = h - lowestNeighbour;
+                            //}
 
                             float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
                             //float hardErodeAmount = erosionFactor; // erosion coefficient for hard material
@@ -521,11 +519,15 @@ namespace TerrainGeneration
                 if (Math.Abs(cellx - cellox) + Math.Abs(celly - celloy) < CellsPerRun / 2)
                 {
                     wp.CarryingDecay *= 1.2f;
+                    if (wp.CarryingDecay > 1.0f)
+                    {
+                        needReset = true;
+                    }
                 }
 
                 if (needReset)
                 {
-                    this.Map[celli].Loose += wp.CarryingAmount;
+                    this.Map[celli].Loose += wp.CarryingAmount.ClampInclusive(0f,1000f);
                     wp.Reset(rand.Next(this.Width), rand.Next(this.Height), rand);// reset particle
                 }
 
