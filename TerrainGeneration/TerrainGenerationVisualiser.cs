@@ -317,7 +317,7 @@ namespace TerrainGeneration
                 this.lastUpdateTime = totalSec;
             }
 
-            this.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, device.Viewport.AspectRatio, 0.1f, 20.0f); // 5km view distance
+            this.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, device.Viewport.AspectRatio, 0.001f, 20.0f); // 5km view distance
 
             device.BlendState = BlendState.NonPremultiplied;
             device.DepthStencilState = DepthStencilState.Default;
@@ -365,6 +365,7 @@ namespace TerrainGeneration
             //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1.0f, 0.0f, 0.0f), projectionMatrix, lightDirection);
             //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
             //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, -1f), projectionMatrix, lightDirection);
 
         }
 
