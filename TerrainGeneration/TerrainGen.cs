@@ -40,6 +40,23 @@ namespace TerrainGeneration
         public float WaterErosionHardErosionFactor { get; set; }  // 0.3
         public float WaterErosionCollapseToAmount { get; set; } // 0.02f
         public float WaterErosionMinSpeed { get; set; }
+
+        /// <summary>
+        /// This adds a random vector of length up to 0.5 x this factor to the fall vector.
+        /// This will ruin the behaviour if you make it too big.
+        /// </summary>
+        public float WaterTurbulence { get; set; }
+
+        /// <summary>
+        /// The momentum of the water particles. Practically this means the amount of the previous fall vector added to the current one.
+        /// </summary>
+        public float WaterMomentumFactor { get; set; }  
+
+        /// <summary>
+        /// Amount over our capacity that we're allowed to erode material.
+        /// Setting this to 1 should be more correct, but tends to make straight lines which look unnatural.
+        /// </summary>
+        public float WaterErosionOverCapacityFactor { get; set; }
         #endregion
 
         public int Iterations { get; set; }
@@ -133,7 +150,9 @@ namespace TerrainGeneration
             this.WaterErosionHardErosionFactor = 0.3f;
             this.WaterErosionCollapseToAmount = 0.02f;
             this.WaterErosionMinSpeed = 0.05f;
-
+            this.WaterErosionOverCapacityFactor = 3.0f;
+            this.WaterMomentumFactor = 1.2f;
+            this.WaterTurbulence = 0.2f;
 
             this.Iterations = 0;
 
@@ -267,7 +286,7 @@ namespace TerrainGeneration
             var up = new Vector3(0f, 0f, 1f);
             var rand = new Random();
             var tileDir = new Vector2(0);
-
+            var turbulence = new Vector3(0);
 
             Func<int, float, float> LowestNeighbour = (i, h) => this.Map[i].WHeight < h ? this.Map[i].WHeight : h;
 
@@ -340,7 +359,10 @@ namespace TerrainGeneration
                         break;
                     }
 
-                    wp.Fall = wp.Fall + fall;
+                    turbulence.X = (float)rand.NextDouble() - 0.5f;
+                    turbulence.Y = (float)rand.NextDouble() - 0.5f;
+
+                    wp.Fall = wp.Fall * this.WaterMomentumFactor + fall + turbulence * this.WaterTurbulence;
                     wp.Fall.Normalize();
 
                     // compute exit point and new cell coords
@@ -449,6 +471,9 @@ namespace TerrainGeneration
                     {
                         cdiff = -cdiff;
 
+                        // multiply the remaining capacity to allow more material to be eroded.
+                        cdiff *= this.WaterErosionOverCapacityFactor;
+
                         float loose = this.Map[celli].Loose;
                         float hard = this.Map[celli].Hard;
 
@@ -473,6 +498,11 @@ namespace TerrainGeneration
                             float looseErodeAmount = erosionFactor; // erosion coefficient for loose material
                             //float hardErodeAmount = erosionFactor; // erosion coefficient for hard material
 
+                            if (looseErodeAmount > cdiff)
+                            {
+                                looseErodeAmount = cdiff;
+                            }
+
                             //this.Map[celli].Water = this.Map[celli].Water * 0.5f + 0.5f * erosionFactor;  // vis for erosion factor
 
                             // first of all, see if we can pick up any loose material.
@@ -487,12 +517,17 @@ namespace TerrainGeneration
                                 wp.CarryingAmount += looseErodeAmount;
 
                                 this.Map[celli].Water += looseErodeAmount;
+                                cdiff -= looseErodeAmount;
 
                                 CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
                             }
 
                             // if we've got any erosion potential left, use it
                             float hardErodeAmount = (erosionFactor - looseErodeAmount) * this.WaterErosionHardErosionFactor;
+                            if (hardErodeAmount > cdiff)
+                            {
+                                hardErodeAmount = cdiff;
+                            }
 
                             if (hardErodeAmount > 0.0f)
                             {
