@@ -420,7 +420,7 @@ namespace TerrainGeneration
                 for (int x = 0; x < this.tile.Width; x++)
                 {
                     var c = this.Terrain.Map[i];
-                    this.tile.Data[i] = (c.Hard + c.Loose) / 4096.0f;
+                    this.tile.Data[i] = (c.WHeight) / 4096.0f;
                     //this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].G = (byte)((c.Loose * 4.0f).ClampInclusive(0.0f, 255.0f));
                     this.shadeTexData[i].B = (byte)((c.MovingWater * 4096.0f).ClampInclusive(0.0f, 255.0f));
