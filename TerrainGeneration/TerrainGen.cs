@@ -50,7 +50,7 @@ namespace TerrainGeneration
         /// <summary>
         /// The momentum of the water particles. Practically this means the amount of the previous fall vector added to the current one.
         /// </summary>
-        public float WaterMomentumFactor { get; set; }  
+        public float WaterMomentumFactor { get; set; }
 
         /// <summary>
         /// Amount over our capacity that we're allowed to erode material.
@@ -101,7 +101,7 @@ namespace TerrainGeneration
             {
                 get
                 {
-                    return Hard + Loose;// +MovingWater;
+                    return Hard + Loose + MovingWater;
                 }
             }
         }
@@ -126,17 +126,17 @@ namespace TerrainGeneration
             // init parameters
 
             // Slump loose slopes - general case
-            this.TerrainSlumpMaxHeightDifference = 1.8f;
+            this.TerrainSlumpMaxHeightDifference = 1.2f;
             this.TerrainSlumpMovementAmount = 0.05f;
             this.TerrainSlumpSamplesPerFrame = 5000;
 
             // Slump loose slopes - rare case
-            this.TerrainSlump2MaxHeightDifference = 0.6f;
-            this.TerrainSlump2MovementAmount = 0.1f;
+            this.TerrainSlump2MaxHeightDifference = 0.8f;
+            this.TerrainSlump2MovementAmount = 0.08f;
             this.TerrainSlump2SamplesPerFrame = 500;
 
             // Water erosion
-            this.WaterNumParticles = 5000;
+            this.WaterNumParticles = 2000;
             this.WaterIterationsPerFrame = 20;
             this.WaterCarryingAmountDecayPerRun = 1.2f;
             this.WaterDepositWaterCollapseAmount = 0.01f;  // 0.05
@@ -232,17 +232,30 @@ namespace TerrainGeneration
             this.Slump(this.TerrainSlump2MaxHeightDifference, this.TerrainSlump2MovementAmount, this.TerrainSlump2SamplesPerFrame);
 
             // fade water amount
-            //if (this.Iterations % 8 == 0)
-            //{
-            for (int i = this.Iterations % 13; i < this.Width * this.Height; i += 13)
-            {
-                this.Map[i].MovingWater *= 0.8f;
-                this.Map[i].Water *= 0.8f;
-                this.Map[i].Carrying *= 0.8f;
-            }
-            //}
+            DecayWater(0.98f,0.95f,0.9f);
 
             this.Iterations++;
+        }
+
+        private void DecayWater(float MovingWaterDecay, float WaterErosionDecay, float CarryingDecay)
+        {
+            
+            Parallel.For(0, this.Height, y =>
+            {
+                int i = y * this.Width;
+                for (int x = 0; x < this.Width; x++)
+                {
+                    this.Map[i].MovingWater *= MovingWaterDecay;
+                    this.Map[i].Water *= WaterErosionDecay;
+                    this.Map[i].Carrying *= CarryingDecay;
+                    i++;
+                }
+            });
+
+
+            //if (this.Iterations % 8 == 0)
+            //{
+            //}
         }
 
 
@@ -562,7 +575,7 @@ namespace TerrainGeneration
 
                 if (needReset)
                 {
-                    this.Map[celli].Loose += wp.CarryingAmount.ClampInclusive(0f,1000f);
+                    this.Map[celli].Loose += wp.CarryingAmount.ClampInclusive(0f, 1000f);
                     wp.Reset(rand.Next(this.Width), rand.Next(this.Height), rand);// reset particle
                 }
 
