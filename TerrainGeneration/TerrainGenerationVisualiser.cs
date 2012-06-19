@@ -58,6 +58,8 @@ namespace TerrainGeneration
         private KeyboardState currKeyboard;
         private KeyboardState prevKeyboard;
 
+        private int autosaveIntervalSeconds = 10;
+        private DateTime lastAutosavedDate = DateTime.Now;
         private string savePath = "../../../../../Terrains";
         private Dictionary<Keys, int> fileSaveSlots = new Dictionary<Keys, int>
             {
@@ -106,6 +108,14 @@ namespace TerrainGeneration
             this.Components.Add(this.walkCamera);
 
             this.StatusMessage = "Press R to randomize terrain, or 1-9 to load a saved slot.";
+
+            try
+            {
+                this.Terrain.Load(GetSaveFileName(0)); // load from autosave slot
+            }
+            catch (Exception) { 
+                // swallow all exceptions when trying to auto-load terrain 
+            }
         }
 
         protected override void Initialize()
@@ -181,7 +191,7 @@ namespace TerrainGeneration
 
             foreach (var k in this.fileSaveSlots.Keys)
             {
-                string filename = Path.Combine(this.savePath, string.Format("Terrain{0}.pass1.ter", fileSaveSlots[k]));
+                string filename = GetSaveFileName(fileSaveSlots[k]);
                 if (WasPressed(k, true))
                 {
                     try
@@ -251,7 +261,25 @@ namespace TerrainGeneration
                 generationSeconds = generationSeconds * 0.9 + 0.1 * stopwatch.Elapsed.TotalSeconds;
             }
 
+            if ((DateTime.Now - this.lastAutosavedDate).TotalSeconds > this.autosaveIntervalSeconds)
+            {
+                try
+                {
+                    this.Terrain.Save(GetSaveFileName(0));
+                }
+                catch (Exception e)
+                {
+                    this.StatusMessage = string.Format("Autosave: {0}: {1}", e.GetType().Name, e.Message);
+                }
+                this.lastAutosavedDate = DateTime.Now;
+            }
+
             base.Update(gameTime);
+        }
+
+        private string GetSaveFileName(int slot)
+        {
+            return Path.Combine(this.savePath, string.Format("Terrain{0}.pass1.ter", slot));
         }
 
         protected override void Draw(GameTime gameTime)
