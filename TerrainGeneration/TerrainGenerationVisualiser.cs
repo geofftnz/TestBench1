@@ -58,7 +58,7 @@ namespace TerrainGeneration
         private KeyboardState currKeyboard;
         private KeyboardState prevKeyboard;
 
-        private int autosaveIntervalSeconds = 10;
+        private int autosaveIntervalSeconds = 60;
         private DateTime lastAutosavedDate = DateTime.Now;
         private string savePath = "../../../../../Terrains";
         private Dictionary<Keys, int> fileSaveSlots = new Dictionary<Keys, int>
