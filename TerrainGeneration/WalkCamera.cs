@@ -23,7 +23,7 @@ namespace TerrainGeneration
         private KeyboardState prevKeyboard;
         private KeyboardState currKeyboard;
 
-        float movementSpeed = 0.1f;
+        float movementSpeed = 0.3f;
 
         /// <summary>
         /// base (ground) position 
@@ -153,7 +153,7 @@ namespace TerrainGeneration
             this.AngleLeftRight += (float)deltaX * -0.005f;
             this.AngleUpDown += (float)deltaY * 0.005f;
             
-            float speed = (float)(this.movementSpeed*gameTime.ElapsedGameTime.TotalSeconds);
+            float speed = (float)(this.movementSpeed * gameTime.ElapsedGameTime.TotalSeconds * Math.Sqrt(this.EyeHeight));
             var pos = this.Position;
             if (currKeyboard.IsKeyDown(Keys.W))
             {
