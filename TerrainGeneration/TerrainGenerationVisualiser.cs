@@ -291,12 +291,15 @@ namespace TerrainGeneration
             DrawTile(gameTime);
 
             sprites.Begin();
-            sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Wheat);
-            sprites.DrawString(statusFont, string.Format("Generation: {0:###0.000}ms", this.generationSeconds * 1000.0), new Vector2(0, 20), Color.Wheat);
+            sprites.DrawString(statusFont, string.Format("FPS: {0:###0}", fc.FPS), new Vector2(0, 0), Color.Orange);
+            sprites.DrawString(statusFont, string.Format("Generation: {0:###0.000}ms", this.generationSeconds * 1000.0), new Vector2(0, 20), Color.Orange);
+
+
+            sprites.DrawString(statusFont, string.Format("Eye: X:{0:###0.00} Y:{2:###0.00} H:{1:###0.00} E:{3:###0.00}", this.walkCamera.Position.X * this.Terrain.Width, this.walkCamera.Position.Y * this.Terrain.Width, this.walkCamera.Position.Z * this.Terrain.Width, this.walkCamera.EyeHeight * this.Terrain.Width), new Vector2(0, 40), Color.Orange);
 
             if (!string.IsNullOrWhiteSpace(this.StatusMessage))
             {
-                sprites.DrawString(statusFont, this.StatusMessage, new Vector2(0, 40), Color.Red);
+                sprites.DrawString(statusFont, this.StatusMessage, new Vector2(0, 60), Color.Red);
             }
 
             sprites.End();
