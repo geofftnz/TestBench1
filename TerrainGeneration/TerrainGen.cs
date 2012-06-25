@@ -42,6 +42,11 @@ namespace TerrainGeneration
         public float WaterErosionMinSpeed { get; set; }
 
         /// <summary>
+        /// Amount we add to the "water height/density" component per frame, multiplied by crossdistance
+        /// </summary>
+        public float WaterAccumulatePerFrame { get; set; }  // 0.001 originally
+
+        /// <summary>
         /// This adds a random vector of length up to 0.5 x this factor to the fall vector.
         /// This will ruin the behaviour if you make it too big.
         /// </summary>
@@ -75,18 +80,23 @@ namespace TerrainGeneration
             /// </summary>
             public float Loose;
             /// <summary>
-            /// Standing water - will flow unrestricted NOTE currently used for erosion amount.
+            /// Suspended material - indicates erosion
             /// </summary>
-            public float Water;
+            public float Erosion;
             /// <summary>
             /// Non-height component indicating how much flowing water is over this tile.
-            /// Also used to indicate material being carried
             /// </summary>
             public float MovingWater;
 
-
-            // carrying capacity
+            /// <summary>
+            /// Amount of suspended material carried over this tile.
+            /// </summary>
             public float Carrying;
+
+            /// <summary>
+            /// Amount of material slumped recently.
+            /// </summary>
+            //public float Slumping;
 
 
             public float Height
@@ -101,7 +111,7 @@ namespace TerrainGeneration
             {
                 get
                 {
-                    return Hard + Loose + MovingWater;
+                    return Hard + Loose;// +MovingWater;
                 }
             }
         }
@@ -126,33 +136,34 @@ namespace TerrainGeneration
             // init parameters
 
             // Slump loose slopes - general case
-            this.TerrainSlumpMaxHeightDifference = 1.2f;
+            this.TerrainSlumpMaxHeightDifference = 1.7f;
             this.TerrainSlumpMovementAmount = 0.05f;
-            this.TerrainSlumpSamplesPerFrame = 5000;
+            this.TerrainSlumpSamplesPerFrame = 20000;
 
             // Slump loose slopes - rare case
-            this.TerrainSlump2MaxHeightDifference = 0.8f;
-            this.TerrainSlump2MovementAmount = 0.08f;
-            this.TerrainSlump2SamplesPerFrame = 500;
+            this.TerrainSlump2MaxHeightDifference = 1.0f;
+            this.TerrainSlump2MovementAmount = 0.05f;
+            this.TerrainSlump2SamplesPerFrame = 10000;
 
             // Water erosion
-            this.WaterNumParticles = 2000;
+            this.WaterNumParticles = 4000;
             this.WaterIterationsPerFrame = 20;
             this.WaterCarryingAmountDecayPerRun = 1.2f;
             this.WaterDepositWaterCollapseAmount = 0.01f;  // 0.05
-            this.WaterSpeedLowpassAmount = 0.8f;
-            this.WaterCarryingCapacitySpeedCoefficient = 5.0f;  // 10
-            this.WaterMaxCarryingCapacity = 2.0f;
-            this.WaterProportionToDropOnOverCapacity = 0.6f;  // 0.8
-            this.WaterErosionSpeedCoefficientMin = 0.02f;
-            this.WaterErosionSpeedCoefficient = 1.0f;  // 1
-            this.WaterErosionWaterDepthMultiplier = 5.0f;  // 20
+            this.WaterSpeedLowpassAmount = 0.2f;  // 0.8
+            this.WaterCarryingCapacitySpeedCoefficient = 2.0f;  // 10
+            this.WaterMaxCarryingCapacity = 50.0f;
+            this.WaterProportionToDropOnOverCapacity = 0.3f;  // 0.8
+            this.WaterErosionSpeedCoefficientMin = 0.1f;
+            this.WaterErosionSpeedCoefficient = 3.0f;  // 1
+            this.WaterErosionWaterDepthMultiplier = 10.0f;  // 20
             this.WaterErosionHardErosionFactor = 0.3f;
             this.WaterErosionCollapseToAmount = 0.02f;
-            this.WaterErosionMinSpeed = 0.05f;
+            this.WaterErosionMinSpeed = 0.01f;
             this.WaterErosionOverCapacityFactor = 3.0f;
             this.WaterMomentumFactor = 1.2f;
-            this.WaterTurbulence = 0.2f;
+            this.WaterTurbulence = 0.05f;
+            this.WaterAccumulatePerFrame = 0.002f;
 
             this.Iterations = 0;
 
@@ -173,22 +184,28 @@ namespace TerrainGeneration
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        private int C(int x, int y)
-        {
-            return ((x + 1024) & 1023) + (((y + 1024) & 1023) << 10);
-            //return x.Wrap(this.Width) + y.Wrap(this.Height) * this.Width;
-        }
 
-        private int CX(int i)
-        {
-            return i & 1023;
-            //return (i % this.Width).Wrap(this.Width);
-        }
-        private int CY(int i)
-        {
-            return (i >> 10) & 1023;
-            //return (i / this.Width).Wrap(this.Height);
-        }
+        private Func<int, int, int> C = (x, y) => ((x + 1024) & 1023) + (((y + 1024) & 1023) << 10);
+        private Func<int, int> CX = (i) => i & 1023;
+        private Func<int, int> CY = (i) => (i >> 10) & 1023;
+
+        //private int C(int x, int y)
+        //{
+        //    return ((x + 1024) & 1023) + (((y + 1024) & 1023) << 10);
+        //    //return x.Wrap(this.Width) + y.Wrap(this.Height) * this.Width;
+        //}
+
+
+        //private int CX(int i)
+        //{
+        //    return i & 1023;
+        //    //return (i % this.Width).Wrap(this.Width);
+        //}
+        //private int CY(int i)
+        //{
+        //    return (i >> 10) & 1023;
+        //    //return (i / this.Width).Wrap(this.Height);
+        //}
 
         private void ClearTempDiffMap()
         {
@@ -198,15 +215,20 @@ namespace TerrainGeneration
         public void InitTerrain1()
         {
             this.Clear(0.0f);
-            this.AddSimplexNoise(9, 0.1f / (float)this.Width, 2000.0f);
-            //this.AddSimplexPowNoise(3, 0.05f / (float)this.Width, 6000.0f, 3.0f, x => Math.Abs(x));
 
-            this.AddSimplexNoise(3, 0.7f / (float)this.Width, 100.0f, h => h, h => h * h);
+            this.AddSimplexNoise(7, 0.1f / (float)this.Width, 2000.0f);
+            this.AddSimplexNoise(7, 0.7f / (float)this.Width, 2000.0f, h => h, h => h * h);
 
-            this.AddSimplexNoise(6, 2.7f / (float)this.Width, 100.0f);
 
-            this.AddLooseMaterial(10.0f);
-            this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 5.0f);
+            this.AddSimplexNoise(6, 3.2f / (float)this.Width, 400.0f, h => h, h => -(h * h * h * h));
+            this.AddSimplexNoise(3, 2.7f / (float)this.Width, 100.0f);
+            this.AddSimplexNoise(6, 17.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => h * h * h);
+
+            this.AddSimplexNoise(8, 7.7f / (float)this.Width, 30.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
+            this.AddSimplexNoise(5, 77.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
+
+            this.AddLooseMaterial(20.0f);
+            this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 10.0f);
 
 
 
@@ -232,22 +254,23 @@ namespace TerrainGeneration
             this.Slump(this.TerrainSlump2MaxHeightDifference, this.TerrainSlump2MovementAmount, this.TerrainSlump2SamplesPerFrame);
 
             // fade water amount
-            DecayWater(0.98f,0.95f,0.9f);
+            DecayWater(0.985f, 0.97f, 0.95f);
 
             this.Iterations++;
         }
 
         private void DecayWater(float MovingWaterDecay, float WaterErosionDecay, float CarryingDecay)
         {
-            
+
             Parallel.For(0, this.Height, y =>
             {
                 int i = y * this.Width;
                 for (int x = 0; x < this.Width; x++)
                 {
                     this.Map[i].MovingWater *= MovingWaterDecay;
-                    this.Map[i].Water *= WaterErosionDecay;
+                    this.Map[i].Erosion *= WaterErosionDecay;
                     this.Map[i].Carrying *= CarryingDecay;
+                    //this.Map[i].Slumping *= CarryingDecay;
                     i++;
                 }
             });
@@ -326,8 +349,10 @@ namespace TerrainGeneration
                 for (int i = 0; i < CellsPerRun; i++)
                 {
 
+
                     // add some flowing water to the terrain so we can see it
-                    this.Map[celli].MovingWater += 0.001f;
+                    //this.Map[celli].MovingWater += 0.001f; // moved further down
+
                     this.Map[celli].Carrying = this.Map[celli].Carrying * 0.5f + 0.5f * wp.CarryingAmount;  // vis for carrying amount
 
                     // get our current height
@@ -461,6 +486,9 @@ namespace TerrainGeneration
                     // work out fraction of cell we're crossing, as a proportion of the length of the diagonal (root-2)
                     crossdistance /= 1.4142136f;
 
+                    // add some moving water so we can see it.
+                    this.Map[celli].MovingWater += WaterAccumulatePerFrame * crossdistance;
+
                     // calculate new carrying capacity
                     wp.CarryingCapacity = (this.WaterCarryingCapacitySpeedCoefficient * wp.Speed) * (1.0f - wp.CarryingDecay);
                     if (wp.CarryingCapacity > this.WaterMaxCarryingCapacity)
@@ -494,12 +522,16 @@ namespace TerrainGeneration
                         if (wp.Speed > this.WaterErosionMinSpeed)
                         {
                             float speed2 = wp.Speed - this.WaterErosionMinSpeed;
-                            //speed2 *= speed2;
+                            //speed2 += 1f;
+                            speed2 = (float)Math.Sqrt(speed2 + 1f) - 1f;
+                            //speed2 -= 1f;
 
                             float erosionFactor =
-                                ((this.WaterErosionSpeedCoefficientMin + speed2) * crossdistance * this.WaterErosionSpeedCoefficient) * // more speed = more erosion.
-                                (1f + this.Map[celli].MovingWater * this.WaterErosionWaterDepthMultiplier) *  // erode more where there is lots of water.
-                                (1.0f - wp.CarryingDecay * 1.1f); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
+                                (
+                                    ((this.WaterErosionSpeedCoefficientMin + speed2) * crossdistance * this.WaterErosionSpeedCoefficient) * // more speed = more erosion.
+                                    (1f + this.Map[celli].MovingWater * this.WaterErosionWaterDepthMultiplier) // erode more where there is lots of water.
+                                ) *  
+                                (1.0f - wp.CarryingDecay); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
 
                             // we can only erode the difference between our height and our lowest neighbour.
                             //erosionFactor = erosionFactor.ClampInclusive(0f, (h - lowestNeighbour) * 3.0f);
@@ -529,10 +561,10 @@ namespace TerrainGeneration
                                 this.Map[celli].Loose -= looseErodeAmount;
                                 wp.CarryingAmount += looseErodeAmount;
 
-                                this.Map[celli].Water += looseErodeAmount;
+                                this.Map[celli].Erosion += looseErodeAmount;
                                 cdiff -= looseErodeAmount;
 
-                                CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
+                                //CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
                             }
 
                             // if we've got any erosion potential left, use it
@@ -547,9 +579,9 @@ namespace TerrainGeneration
                                 this.Map[celli].Hard -= hardErodeAmount;
                                 wp.CarryingAmount += hardErodeAmount; // loose material is less dense than hard, so make it greater.
 
-                                this.Map[celli].Water += hardErodeAmount;
+                                this.Map[celli].Erosion += hardErodeAmount;
 
-                                CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
+                                //CollapseTo(cellx, celly, this.WaterErosionCollapseToAmount);
                             }
                         }
                     }
@@ -768,9 +800,15 @@ namespace TerrainGeneration
                         {
                             diff = loose;
                         }
-                        diffmap[pFrom] -= diff * a;
-                        diffmap[pTo] += diff * a;
-                        return diff * a;
+
+                        diff *= a;
+
+                        diffmap[pFrom] -= diff;
+                        diffmap[pTo] += diff;
+
+                        this.Map[pFrom].Erosion += diff;
+
+                        return diff;
                     }
                 }
                 return 0f;
@@ -790,16 +828,20 @@ namespace TerrainGeneration
                 int se = C(x + 1, y + 1);
 
                 float h = this.Map[p].Hard + this.Map[p].Loose;
+                float a = (amount * (this.Map[p].MovingWater * 200.0f + 0.2f)).ClampInclusive(0.005f, 0.1f);  // slump more where there is more water
 
-                h += SlumpF(n, p, h, amount, _threshold, diffmap);
-                h += SlumpF(s, p, h, amount, _threshold, diffmap);
-                h += SlumpF(w, p, h, amount, _threshold, diffmap);
-                h += SlumpF(e, p, h, amount, _threshold, diffmap);
+                float th = _threshold / (1f + this.Map[p].MovingWater * 200f);
+                float th2 = th * 1.414f;
 
-                h += SlumpF(nw, p, h, amount, _threshold2, diffmap);
-                h += SlumpF(ne, p, h, amount, _threshold2, diffmap);
-                h += SlumpF(sw, p, h, amount, _threshold2, diffmap);
-                h += SlumpF(se, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(n, p, h, a, th, diffmap);
+                h += SlumpF(s, p, h, a, th, diffmap);
+                h += SlumpF(w, p, h, a, th, diffmap);
+                h += SlumpF(e, p, h, a, th, diffmap);
+
+                h += SlumpF(nw, p, h, a, th2, diffmap);
+                h += SlumpF(ne, p, h, a, th2, diffmap);
+                h += SlumpF(sw, p, h, a, th2, diffmap);
+                h += SlumpF(se, p, h, a, th2, diffmap);
             };
 
             //var threadlocal = new { diffmap = new float[this.Width * this.Height], r = new Random() };
@@ -811,10 +853,16 @@ namespace TerrainGeneration
 
                 SlumpTo(x, y, threadlocal.diffmap);
             }
-            for (int i = 0; i < this.Width * this.Height; i++)
+
+            Parallel.For(0, 8, j =>
             {
-                this.Map[i].Loose += threadlocal.diffmap[i];
-            }
+                int ii = j * ((this.Width * this.Height) >> 3);
+                for (int i = 0; i < (this.Width * this.Height) >> 3; i++)
+                {
+                    this.Map[ii].Loose += threadlocal.diffmap[ii];
+                    ii++;
+                }
+            });
 
 
         }
@@ -1010,7 +1058,7 @@ namespace TerrainGeneration
                     {
                         sw.Write(this.Map[i].Hard);
                         sw.Write(this.Map[i].Loose);
-                        sw.Write(this.Map[i].Water);
+                        sw.Write(this.Map[i].Erosion);
                         sw.Write(this.Map[i].MovingWater);
                     }
 
@@ -1049,7 +1097,7 @@ namespace TerrainGeneration
                     {
                         this.Map[i].Hard = sr.ReadSingle();
                         this.Map[i].Loose = sr.ReadSingle();
-                        this.Map[i].Water = sr.ReadSingle();
+                        this.Map[i].Erosion = sr.ReadSingle();
                         this.Map[i].MovingWater = sr.ReadSingle();
                     }
 

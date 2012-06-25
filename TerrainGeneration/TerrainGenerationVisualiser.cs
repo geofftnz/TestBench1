@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Media;
 using Utils;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace TerrainGeneration
 {
@@ -120,8 +121,8 @@ namespace TerrainGeneration
 
         protected override void Initialize()
         {
-            graphics.PreferredBackBufferWidth = 1400;
-            graphics.PreferredBackBufferHeight = 1024;
+            graphics.PreferredBackBufferWidth = 1800;
+            graphics.PreferredBackBufferHeight = 1100;
             graphics.IsFullScreen = false;
             graphics.ApplyChanges();
 
@@ -279,7 +280,7 @@ namespace TerrainGeneration
 
         private string GetSaveFileName(int slot)
         {
-            return Path.Combine(this.savePath, string.Format("Terrain{0}.pass1.ter", slot));
+            return Path.Combine(this.savePath, string.Format("Terrain{0}.{1}.pass1.ter", slot,this.Terrain.Width));
         }
 
         protected override void Draw(GameTime gameTime)
@@ -415,23 +416,29 @@ namespace TerrainGeneration
 
         private void UpdateTileData()
         {
-            int i = 0;
 
             // heights & col
-            for (int y = 0; y < this.tile.Height; y++)
+            //for (int y = 0; y < this.tile.Height; y++)
+            //{
+            Parallel.For(0, this.tile.Height, y =>
             {
+                int i = y * this.Terrain.Width;
                 for (int x = 0; x < this.tile.Width; x++)
                 {
                     var c = this.Terrain.Map[i];
-                    this.tile.Data[i] = (c.WHeight) / 4096.0f;
+                    this.tile.Data[i] = (c.Height) / 4096.0f;
                     //this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
+                    
                     this.shadeTexData[i].G = (byte)((c.Loose * 4.0f).ClampInclusive(0.0f, 255.0f));
-                    this.shadeTexData[i].B = (byte)((c.MovingWater * 4096.0f).ClampInclusive(0.0f, 255.0f));
-                    this.shadeTexData[i].A = (byte)((c.Water * 32f).ClampInclusive(0.0f, 255.0f));  // erosion rate
+                    //this.shadeTexData[i].G = (byte)((c.Slumping * 256.0f).ClampInclusive(0.0f, 255.0f));
+
+                    this.shadeTexData[i].B = (byte)((c.MovingWater * 2048.0f).ClampInclusive(0.0f, 255.0f));
+                    this.shadeTexData[i].A = (byte)((c.Erosion * 32f).ClampInclusive(0.0f, 255.0f));  // erosion rate
                     this.shadeTexData[i].R = (byte)((c.Carrying * 32f).ClampInclusive(0.0f, 255.0f)); // carrying capacity
                     i++;
                 }
-            }
+            });
+            //}
 
             this.tile.UpdateHeights(device);
             this.tile.UpdateShadeTexture(this.shadeTexData);

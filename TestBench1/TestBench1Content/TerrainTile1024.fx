@@ -328,6 +328,9 @@ float4 GenerateCol(float3 p)
 	float4 colL2 = {0.41,0.39,0.16,1.0};
 
 	float4 colW = {0.7,0.8,1.0,1.0};
+
+	float4 colE = {1.0,0.4,0.0,1.0};
+
 	//float4 colA = {1.0,0.3,0.0,1.0};
 
 	float4 s = tex2D(ShadeTexSampler,p.xy);
@@ -351,8 +354,11 @@ float4 GenerateCol(float3 p)
 	// water colour: carrying amount lerps between blue and brown (clear->dirty)
 	// erosion rate is similar to speed -> lerp to white water
 
+	// erosion
+	col= lerp(col,colE,clamp(s.a,0.0,0.8));
 
 	col = lerp(col,colW,clamp(s.b*s.b*8.0,0,0.6)); // water
+
 	//col = lerp(col, colA, s.a);
 
 	//col = lerp(col,colA,s.a);
