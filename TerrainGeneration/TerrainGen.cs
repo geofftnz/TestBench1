@@ -12,7 +12,7 @@ using System.IO.Compression;
 
 namespace TerrainGeneration
 {
-    public class TerrainGen
+    public class TerrainGen : ITerrainGen
     {
         const int NUMTHREADS = 3;
         const int FILEMAGIC = 0x54455230;
@@ -127,7 +127,6 @@ namespace TerrainGeneration
         public Cell[] Map { get; private set; }
         private float[] TempDiffMap;
 
-        //private List<ErosionParticle> WaterParticlesOld = new List<ErosionParticle>();
         private List<ErosionParticle2> WaterParticles = new List<ErosionParticle2>();
 
         public TerrainGen(int width, int height)
@@ -141,9 +140,9 @@ namespace TerrainGeneration
             // init parameters
 
             // Slump loose slopes - general case
-            this.TerrainSlumpMaxHeightDifference = 1.7f;
+            this.TerrainSlumpMaxHeightDifference = 1.0f;
             this.TerrainSlumpMovementAmount = 0.05f;
-            this.TerrainSlumpSamplesPerFrame = 20000;
+            this.TerrainSlumpSamplesPerFrame = 50000;
 
             // Slump loose slopes - rare case
             this.TerrainSlump2MaxHeightDifference = 1.0f;

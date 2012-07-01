@@ -21,27 +21,40 @@ namespace TerrainGeneration
         /// terrain generation object that we will be visualising/controlling
         /// </summary>
         public TerrainGen Terrain { get; set; }
+        public TerrainGenPass2 TerrainPass2 { get; set; }
+        public int TerrainGenPass { get; private set; }
 
-        // texture to hold the bit of the terrain we're looking at (1024x1024)
-        //private Texture2D VisTexture;
-        //private int VisTextureWidth = 1024;
-        //private int VisTextureHeight = 1024;
+        public ITerrainGen CurrentTerrainGenerator
+        {
+            get
+            {
+                switch (this.TerrainGenPass)
+                {
+                    case 1:
+                        return this.Terrain;
+                        break;
+                    case 2:
+                        return this.TerrainPass2;
+                        break;
+                    default:
+                        throw new Exception("Invalid terrain pass.");
+                }
+            }
+        }
 
         // misc
         private FrameCounter fc = new FrameCounter();
-        //private Matrix viewMatrix;
         private Matrix projectionMatrix;
         private GraphicsDeviceManager graphics;
         private GraphicsDevice device;
         private Effect terrainVisEffect;
         private SpriteFont statusFont;
         private SpriteBatch sprites;
-        //private VertexPositionTexture[] terrainQuad = new VertexPositionTexture[4];
-        //private short[] terrainQuadIndex = new short[4];
         private QuadRender quad;
 
         private TerrainEngine.TerrainTile tile;
         private Effect terrainTileEffect;
+        private Effect terrainTileEffectPass2;
 
         private Color[] shadeTexData;
 
@@ -95,6 +108,10 @@ namespace TerrainGeneration
         public TerrainGenerationVisualiser()
         {
             this.Terrain = new TerrainGen(1024, 1024);
+            this.TerrainPass2 = new TerrainGenPass2(1024, 1024);
+
+            this.TerrainGenPass = 1;
+
             //this.Terrain.InitTerrain1();
             this.Terrain.Clear(0.0f);
 
@@ -108,15 +125,16 @@ namespace TerrainGeneration
             this.walkCamera = new WalkCamera(this);
             this.Components.Add(this.walkCamera);
 
-            this.walkCamera.EyeHeight = 500f/4096f;
+            this.walkCamera.EyeHeight = 500f / 4096f;
 
-            this.StatusMessage = "Press R to randomize terrain, or 1-9 to load a saved slot.";
+            this.StatusMessage = "Press R to randomize terrain, or 1-9 to load a saved slot. P to switch simulation modes.";
 
             try
             {
-                this.Terrain.Load(GetSaveFileName(0)); // load from autosave slot
+                this.Terrain.Load(GetSaveFileName(0, this.TerrainGenPass)); // load from autosave slot
             }
-            catch (Exception) { 
+            catch (Exception)
+            {
                 // swallow all exceptions when trying to auto-load terrain 
             }
         }
@@ -140,13 +158,10 @@ namespace TerrainGeneration
             this.sprites = new SpriteBatch(device);
             terrainVisEffect = Content.Load<Effect>("GenerationVisualiser");
             terrainTileEffect = Content.Load<Effect>("TerrainTile1024");
+            terrainTileEffectPass2 = Content.Load<Effect>("TerrainTile1024Pass2");
             statusFont = Content.Load<SpriteFont>("statusFont");
 
             quad = new QuadRender(device);
-
-            // initial load
-            //this.CreateTexture(device);
-            //this.UpdateTexture();
 
             // terrain tile
             this.tile.LoadContent(device);
@@ -194,12 +209,12 @@ namespace TerrainGeneration
 
             foreach (var k in this.fileSaveSlots.Keys)
             {
-                string filename = GetSaveFileName(fileSaveSlots[k]);
+                string filename = GetSaveFileName(fileSaveSlots[k], this.TerrainGenPass);
                 if (WasPressed(k, true))
                 {
                     try
                     {
-                        this.Terrain.Save(filename);
+                        this.CurrentTerrainGenerator.Save(filename);
                         this.StatusMessage = string.Format("Saved to {0}", Path.GetFullPath(filename));
                     }
                     catch (Exception e)
@@ -211,7 +226,7 @@ namespace TerrainGeneration
                 {
                     try
                     {
-                        this.Terrain.Load(filename);
+                        this.CurrentTerrainGenerator.Load(filename);
                         this.StatusMessage = string.Format("Loaded from {0}", Path.GetFullPath(filename));
                     }
                     catch (Exception e)
@@ -224,6 +239,7 @@ namespace TerrainGeneration
             if (WasPressed(Keys.R))
             {
                 this.Terrain.InitTerrain1();
+                this.TerrainGenPass = 1; // switch back to erosion pass.
                 this.StatusMessage = "New random terrain generated";
             }
 
@@ -246,26 +262,32 @@ namespace TerrainGeneration
                 this.StatusMessage = string.Format("Mouselook {0}", this.walkCamera.MouseEnabled ? "enabled" : "disabled");
             }
 
+            if (WasPressed(Keys.P))
+            {
+                switch (this.TerrainGenPass)
+                {
+                    case 1: // switching from erosion pass to snow pass
+
+                        this.TerrainPass2.InitFromPass1(this.Terrain);
+                        this.TerrainGenPass = 2;
+                        this.StatusMessage = "Switched to snow pass.";
+
+                        break;
+
+                    case 2:
+
+                        this.TerrainGenPass = 1;
+                        this.StatusMessage = "Switched to erosion pass.";
+
+                        break;
+                }
+            }
 
 
-
-
-
-
-
-
-            /*
-            if (currKeyboard.IsKeyDown(Keys.Left)) { angle += 0.02; }
-            if (currKeyboard.IsKeyDown(Keys.Right)) { angle -= 0.02; }
-            if (currKeyboard.IsKeyDown(Keys.Up)) { eyeradius -= 0.05f; }
-            if (currKeyboard.IsKeyDown(Keys.Down)) { eyeradius += 0.05f; }
-            if (currKeyboard.IsKeyDown(Keys.A)) { eyeheight += 0.05f; }
-            if (currKeyboard.IsKeyDown(Keys.Z)) { eyeheight -= 0.05f; }
-            */
             if (!paused && !this.walkCamera.IsMoving)
             {
                 stopwatch.Restart();
-                this.Terrain.ModifyTerrain();
+                this.CurrentTerrainGenerator.ModifyTerrain();
                 stopwatch.Stop();
                 generationSeconds = generationSeconds * 0.9 + 0.1 * stopwatch.Elapsed.TotalSeconds;
             }
@@ -274,7 +296,7 @@ namespace TerrainGeneration
             {
                 try
                 {
-                    this.Terrain.Save(GetSaveFileName(0));
+                    this.CurrentTerrainGenerator.Save(GetSaveFileName(0, this.TerrainGenPass));
                 }
                 catch (Exception e)
                 {
@@ -286,17 +308,15 @@ namespace TerrainGeneration
             base.Update(gameTime);
         }
 
-        private string GetSaveFileName(int slot)
+        private string GetSaveFileName(int slot, int pass)
         {
-            return Path.Combine(this.savePath, string.Format("Terrain{0}.{1}.pass1.ter", slot,this.Terrain.Width));
+            return Path.Combine(this.savePath, string.Format("Terrain{0}.{1}.pass{2}.ter", slot, this.Terrain.Width, pass));
         }
 
         protected override void Draw(GameTime gameTime)
         {
             fc.Frame();
 
-
-            //Draw2DTerrain(gameTime);
             DrawTile(gameTime);
 
             sprites.Begin();
@@ -316,33 +336,6 @@ namespace TerrainGeneration
             base.Draw(gameTime);
         }
 
-        /*
-        private void Draw2DTerrain(GameTime gameTime)
-        {
-            this.projectionMatrix = Matrix.CreateOrthographic(1600f, 1200f, 0.0f, 1.0f);
-
-            if (fc.Frames % 15 == 0)
-            {
-                device.Textures[0] = null;
-                this.UpdateTexture();
-            }
-
-            device.BlendState = BlendState.NonPremultiplied;
-            device.DepthStencilState = DepthStencilState.Default;
-            device.Clear(new Color(0.8f, 0.88f, 0.92f));
-
-            Matrix worldMatrix = Matrix.Identity;
-
-            this.terrainVisEffect.Parameters["HeightTex"].SetValue(this.VisTexture);
-            this.terrainVisEffect.Parameters["World"].SetValue(worldMatrix);
-            this.terrainVisEffect.Parameters["View"].SetValue(worldMatrix);
-            this.terrainVisEffect.Parameters["Projection"].SetValue(this.projectionMatrix);
-
-            this.terrainVisEffect.CurrentTechnique = this.terrainVisEffect.Techniques["Relief"];
-
-            quad.RenderFullScreenQuad(this.terrainVisEffect);
-        }*/
-
         private void DrawTile(GameTime gameTime)
         {
             double totalSec = fc.TotalSeconds;
@@ -351,9 +344,16 @@ namespace TerrainGeneration
                 device.Textures[0] = null;
                 device.Textures[1] = null;
                 device.Textures[2] = null;
-                //this.UpdateTexture();
 
-                this.UpdateTileData();
+                switch (this.TerrainGenPass)
+                {
+                    case 1:
+                        this.UpdateTileData();
+                        break;
+                    case 2:
+                        this.UpdateTileDataPass2();
+                        break;
+                }
                 this.lastUpdateTime = totalSec;
             }
 
@@ -362,19 +362,10 @@ namespace TerrainGeneration
             device.BlendState = BlendState.NonPremultiplied;
             device.DepthStencilState = DepthStencilState.Default;
 
-            device.Clear(new Color(0.8f, 0.88f, 0.92f));
+            device.Clear(new Color(0.4f, 0.5f, 0.6f));
 
 
-            //angle += this.paused?0.0:gameTime.ElapsedGameTime.TotalSeconds * 0.1;
             Vector3 eyePos = new Vector3((float)eyeradius * (float)Math.Cos(angle) + 0.5f, eyeheight, (float)eyeradius * (float)Math.Sin(angle) + 0.5f);
-
-            //this.player.Position = this.terrain.ClampToGround(new Vector3(r * (float)Math.Cos(angle) + 1f, 0.0f, r * (float)Math.Sin(angle) + 1f));
-            //this.player.Position = this.terrain.ClampToGround(this.player.Position);
-
-            //this.player.Position = eyePos;
-            //this.viewMatrix = this.player.ViewMatrix;
-
-            //Matrix viewMatrix = Matrix.CreateLookAt(eyePos, new Vector3(0.5f, 0.0f, 0.5f), new Vector3(0, 1, 0));
 
             this.walkCamera.Position = this.Terrain.ClampToGround(this.walkCamera.Position);
             var viewMatrix = this.walkCamera.ViewMatrix;
@@ -387,47 +378,29 @@ namespace TerrainGeneration
             Vector3 lightDirection = new Vector3(1.0f, 1.0f, 0.2f);
             lightDirection.Normalize();
 
-
+            // choose effect depending on pass
             terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["RaycastTile1"];
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
+            terrainTileEffectPass2.CurrentTechnique = terrainTileEffectPass2.Techniques["RaycastTile1"];
+            Effect effect = this.TerrainGenPass == 1 ? terrainTileEffect : terrainTileEffectPass2;
 
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 0f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 1f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, 1f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 0f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, -1f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, -1f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 1f), projectionMatrix, lightDirection);
-            this.tile.Draw(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
 
-            //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
-            //worldMatrix = worldMatrix * Matrix.CreateTranslation(1.0f, 0.0f, 0.0f);
-            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(1.0f, 0.0f, 0.0f), projectionMatrix, lightDirection);
-            //terrainTileEffect.CurrentTechnique = terrainTileEffect.Techniques["BBox"];
-            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, worldMatrix, projectionMatrix, lightDirection);
-            //this.tile.DrawBox(gameTime, device, terrainTileEffect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 0f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 0f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(0f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, -1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(-1f, 0f, 1f), projectionMatrix, lightDirection);
+            this.tile.Draw(gameTime, device, effect, eyePos, viewMatrix, Matrix.CreateTranslation(1f, 0f, -1f), projectionMatrix, lightDirection);
 
         }
 
 
-
-        /*
-        private void CreateTexture(GraphicsDevice d)
-        {
-            this.VisTexture = new Texture2D(d, this.VisTextureWidth, this.VisTextureHeight, false, SurfaceFormat.Vector4);
-            this.VisTexture.Name = "TerrainVisTex";
-        }
-        private void UpdateTexture()
-        {
-            this.VisTexture.SetData(this.Terrain.Map);
-        }*/
 
         private void UpdateTileData()
         {
 
-            // heights & col
-            //for (int y = 0; y < this.tile.Height; y++)
-            //{
             Parallel.For(0, this.tile.Height, y =>
             {
                 int i = y * this.Terrain.Width;
@@ -436,7 +409,7 @@ namespace TerrainGeneration
                     var c = this.Terrain.Map[i];
                     this.tile.Data[i] = (c.Height) / 4096.0f;
                     //this.shadeTexData[i].R = (byte)((c.Hard / 4.0f).ClampInclusive(0.0f, 255.0f));
-                    
+
                     this.shadeTexData[i].G = (byte)((c.Loose * 4.0f).ClampInclusive(0.0f, 255.0f));
                     //this.shadeTexData[i].G = (byte)((c.Slumping * 256.0f).ClampInclusive(0.0f, 255.0f));
 
@@ -446,29 +419,33 @@ namespace TerrainGeneration
                     i++;
                 }
             });
-            //}
 
             this.tile.UpdateHeights(device);
             this.tile.UpdateShadeTexture(this.shadeTexData);
         }
 
+        private void UpdateTileDataPass2()
+        {
 
-        //private void SetupTerrainQuad()
-        //{
-        //    int i = 0;
-        //    float x0 = 0f, y0 = 0f;
-        //    float x1 = 1024f, y1 = 1024f;
-        //    this.terrainQuad[i++] = new VertexPositionTexture(new Vector3(x0, y0, 0.0f), new Vector2(0f, 0f));
-        //    this.terrainQuad[i++] = new VertexPositionTexture(new Vector3(x1, y0, 0.0f), new Vector2(1f, 0f));
-        //    this.terrainQuad[i++] = new VertexPositionTexture(new Vector3(x0, y1, 0.0f), new Vector2(0f, 1f));
-        //    this.terrainQuad[i++] = new VertexPositionTexture(new Vector3(x1, y1, 0.0f), new Vector2(1f, 1f));
-        //    i = 0;
-        //    this.terrainQuadIndex[i++] = 0;
-        //    this.terrainQuadIndex[i++] = 1;
-        //    this.terrainQuadIndex[i++] = 2;
-        //    this.terrainQuadIndex[i++] = 3;
+            Parallel.For(0, this.tile.Height, y =>
+            {
+                int i = y * this.TerrainPass2.Width;
+                for (int x = 0; x < this.tile.Width; x++)
+                {
+                    var c = this.TerrainPass2.Map[i];
+                    this.tile.Data[i] = (c.Height) / 4096.0f;
 
-        //}
+                    this.shadeTexData[i].R = (byte)((c.Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
+                    this.shadeTexData[i].G = (byte)((c.Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
+                    this.shadeTexData[i].B = (byte)((c.Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
+                    this.shadeTexData[i].A = 0;
+                    i++;
+                }
+            });
+
+            this.tile.UpdateHeights(device);
+            this.tile.UpdateShadeTexture(this.shadeTexData);
+        }
 
     }
 }

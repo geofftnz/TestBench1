@@ -141,5 +141,10 @@ namespace Utils
         {
             return ((int)Math.Floor(pos.Y)).Wrap(height);
         }
+
+        public static Func<int, int, int> C1024 = (x, y) => ((x + 1024) & 1023) + (((y + 1024) & 1023) << 10);
+        public static Func<int, int> CX1024 = (i) => i & 1023;
+        public static Func<int, int> CY1024 = (i) => (i >> 10) & 1023;
+
     }
 }
