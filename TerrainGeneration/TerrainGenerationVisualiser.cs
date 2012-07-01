@@ -108,6 +108,8 @@ namespace TerrainGeneration
             this.walkCamera = new WalkCamera(this);
             this.Components.Add(this.walkCamera);
 
+            this.walkCamera.EyeHeight = 500f/4096f;
+
             this.StatusMessage = "Press R to randomize terrain, or 1-9 to load a saved slot.";
 
             try
@@ -236,6 +238,12 @@ namespace TerrainGeneration
                 this.tileUpdateInterval *= 0.75;
                 if (this.tileUpdateInterval < 0.1) this.tileUpdateInterval = 0.1;
                 this.StatusMessage = string.Format("Tile update interval now {0:0.00}s", this.tileUpdateInterval);
+            }
+            if (WasPressed(Keys.M))
+            {
+                this.walkCamera.MouseEnabled = !this.walkCamera.MouseEnabled;
+
+                this.StatusMessage = string.Format("Mouselook {0}", this.walkCamera.MouseEnabled ? "enabled" : "disabled");
             }
 
 

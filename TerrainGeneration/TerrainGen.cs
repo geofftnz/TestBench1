@@ -26,6 +26,11 @@ namespace TerrainGeneration
         public float TerrainSlump2MovementAmount { get; set; }
         public int TerrainSlump2SamplesPerFrame { get; set; }
 
+        public float TerrainCollapseMaxHeightDifference { get; set; }
+        public float TerrainCollapseMovementAmount { get; set; }
+        public float TerrainCollapseLooseThreshold { get; set; }
+        public int TerrainCollapseSamplesPerFrame { get; set; }
+
         public int WaterNumParticles { get; set; }
         public int WaterIterationsPerFrame { get; set; }
         public float WaterCarryingAmountDecayPerRun { get; set; }
@@ -111,7 +116,7 @@ namespace TerrainGeneration
             {
                 get
                 {
-                    return Hard + Loose;// +MovingWater;
+                    return Hard + Loose + MovingWater;
                 }
             }
         }
@@ -143,27 +148,34 @@ namespace TerrainGeneration
             // Slump loose slopes - rare case
             this.TerrainSlump2MaxHeightDifference = 1.0f;
             this.TerrainSlump2MovementAmount = 0.05f;
-            this.TerrainSlump2SamplesPerFrame = 10000;
+            this.TerrainSlump2SamplesPerFrame = 2000;
+
+            // Collapse hard material - rare - used to simulate rockfall in slot canyons and cliffs
+            this.TerrainCollapseMaxHeightDifference = 3.0f;
+            this.TerrainCollapseMovementAmount = 0.05f;
+            this.TerrainCollapseLooseThreshold = 1f;
+            this.TerrainCollapseSamplesPerFrame = 2000;
 
             // Water erosion
             this.WaterNumParticles = 4000;
             this.WaterIterationsPerFrame = 20;
             this.WaterCarryingAmountDecayPerRun = 1.2f;
             this.WaterDepositWaterCollapseAmount = 0.01f;  // 0.05
-            this.WaterSpeedLowpassAmount = 0.2f;  // 0.8
-            this.WaterCarryingCapacitySpeedCoefficient = 2.0f;  // 10
+            this.WaterCarryingCapacitySpeedCoefficient = 3.0f;  // 10
             this.WaterMaxCarryingCapacity = 50.0f;
             this.WaterProportionToDropOnOverCapacity = 0.3f;  // 0.8
             this.WaterErosionSpeedCoefficientMin = 0.1f;
-            this.WaterErosionSpeedCoefficient = 3.0f;  // 1
+            this.WaterErosionSpeedCoefficient = 5.0f;  // 1
             this.WaterErosionWaterDepthMultiplier = 10.0f;  // 20
-            this.WaterErosionHardErosionFactor = 0.3f;
+            this.WaterErosionHardErosionFactor = 0.5f;
             this.WaterErosionCollapseToAmount = 0.02f;
             this.WaterErosionMinSpeed = 0.01f;
             this.WaterErosionOverCapacityFactor = 3.0f;
-            this.WaterMomentumFactor = 1.2f;
-            this.WaterTurbulence = 0.05f;
             this.WaterAccumulatePerFrame = 0.002f;
+
+            this.WaterSpeedLowpassAmount = 0.2f;  // 0.8
+            this.WaterMomentumFactor = 0.05f;
+            this.WaterTurbulence = 0.05f;
 
             this.Iterations = 0;
 
@@ -216,18 +228,18 @@ namespace TerrainGeneration
         {
             this.Clear(0.0f);
 
-            this.AddSimplexNoise(7, 0.1f / (float)this.Width, 2000.0f);
-            this.AddSimplexNoise(7, 0.7f / (float)this.Width, 2000.0f, h => h, h => h * h);
+            this.AddSimplexNoise(10, 0.3f / (float)this.Width, 2000.0f);
+            this.AddSimplexNoise(10, 0.43f / (float)this.Width, 1000.0f, h => Math.Abs(h), h => h * h);
 
 
-            this.AddSimplexNoise(6, 3.2f / (float)this.Width, 400.0f, h => h, h => -(h * h * h * h));
-            this.AddSimplexNoise(3, 2.7f / (float)this.Width, 100.0f);
-            this.AddSimplexNoise(6, 17.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => h * h * h);
+            //this.AddSimplexNoise(6, 3.2f / (float)this.Width, 400.0f, h => h, h => -(h * h * h * h));
+            //this.AddSimplexNoise(3, 2.7f / (float)this.Width, 100.0f);
+            //this.AddSimplexNoise(6, 17.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => h * h * h);
 
-            this.AddSimplexNoise(8, 7.7f / (float)this.Width, 30.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
-            this.AddSimplexNoise(5, 77.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
+            this.AddSimplexNoise(10, 7.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
+            this.AddSimplexNoise(5, 37.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
 
-            this.AddLooseMaterial(20.0f);
+            this.AddLooseMaterial(15.0f);
             this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 10.0f);
 
 
@@ -252,6 +264,7 @@ namespace TerrainGeneration
             this.RunWater2(this.WaterIterationsPerFrame);
             this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
             this.Slump(this.TerrainSlump2MaxHeightDifference, this.TerrainSlump2MovementAmount, this.TerrainSlump2SamplesPerFrame);
+            this.Collapse(this.TerrainCollapseMaxHeightDifference, this.TerrainCollapseMovementAmount, 1f, this.TerrainCollapseSamplesPerFrame);
 
             // fade water amount
             DecayWater(0.985f, 0.97f, 0.95f);
@@ -868,6 +881,100 @@ namespace TerrainGeneration
         }
 
 
+        /// <summary>
+        /// Similar to Slump(), but works on hard material instead of loose, and only when amount of loose coverage is below a certain threshold
+        /// </summary>
+        /// <param name="_threshold"></param>
+        /// <param name="amount"></param>
+        /// <param name="numIterations"></param>
+        public void Collapse(float _threshold, float amount, float looseThreshold, int numIterations)
+        {
+            //float amount2 = amount * 0.707f;
+            float _threshold2 = (float)(_threshold * Math.Sqrt(2.0));
+            this.ClearTempDiffMap();
+
+            Func<int, int, float, float, float, float[], float> SlumpF = (pFrom, pTo, h, a, threshold, diffmap) =>
+            {
+
+                if (this.Map[pFrom].Loose > looseThreshold)
+                {
+                    return 0f;
+                }
+
+                float diff = this.Map[pFrom].Hard - h;
+                if (diff > threshold)
+                {
+                    diff -= threshold;
+
+                    diff *= a;
+
+                    diffmap[pFrom] -= diff;
+                    diffmap[pTo] += diff;
+
+                    this.Map[pFrom].Erosion += diff;
+
+                    return diff;
+                }
+                
+                return 0f;
+            };
+
+            Action<int, int, float[]> SlumpTo = (x, y, diffmap) =>
+            {
+                int p = C(x, y);
+                int n = C(x, y - 1);
+                int s = C(x, y + 1);
+                int w = C(x - 1, y);
+                int e = C(x + 1, y);
+
+                int nw = C(x - 1, y - 1);
+                int ne = C(x + 1, y - 1);
+                int sw = C(x - 1, y + 1);
+                int se = C(x + 1, y + 1);
+
+                float h = this.Map[p].Hard + this.Map[p].Loose;
+
+                h += SlumpF(n, p, h, amount, _threshold, diffmap);
+                h += SlumpF(s, p, h, amount, _threshold, diffmap);
+                h += SlumpF(w, p, h, amount, _threshold, diffmap);
+                h += SlumpF(e, p, h, amount, _threshold, diffmap);
+
+                h += SlumpF(nw, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(ne, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(sw, p, h, amount, _threshold2, diffmap);
+                h += SlumpF(se, p, h, amount, _threshold2, diffmap);
+            };
+
+            //var threadlocal = new { diffmap = new float[this.Width * this.Height], r = new Random() };
+            var threadlocal = new { diffmap = this.TempDiffMap, r = new Random() };
+            for (int i = 0; i < numIterations; i++)
+            {
+                int x = threadlocal.r.Next(this.Width);
+                int y = threadlocal.r.Next(this.Height);
+
+                SlumpTo(x, y, threadlocal.diffmap);
+            }
+
+            Parallel.For(0, 8, j =>
+            {
+                int ii = j * ((this.Width * this.Height) >> 3);
+                for (int i = 0; i < (this.Width * this.Height) >> 3; i++)
+                {
+                    float d = threadlocal.diffmap[ii];
+                    if (d < 0)
+                    {
+                        this.Map[ii].Hard += d;
+                    }
+                    else
+                    {
+                        this.Map[ii].Loose += d;
+                    }
+                    ii++;
+                }
+            });
+
+
+        }
 
         private Func<Cell[], int, int, float, float, float> CollapseCellFunc = (m, ci, i, h, a) =>
         {

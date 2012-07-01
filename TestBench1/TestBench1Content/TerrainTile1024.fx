@@ -336,7 +336,7 @@ float4 GenerateCol(float3 p)
 	float4 s = tex2D(ShadeTexSampler,p.xy);
 	float h = SampleHeight(p.xy);
 
-	float looseblend = s.g * 2.0f;
+	float looseblend = clamp(s.g * s.g * 8.0,0.0,1.0);
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
 	float4 colW0 = {0.325,0.498,0.757,1.0};  // blue water
@@ -355,9 +355,9 @@ float4 GenerateCol(float3 p)
 	// erosion rate is similar to speed -> lerp to white water
 
 	// erosion
-	col= lerp(col,colE,clamp(s.a,0.0,0.8));
+	col= lerp(col,colE,clamp(s.a,0.0,0.2));
 
-	col = lerp(col,colW,clamp(s.b*s.b*8.0,0,0.6)); // water
+	col = lerp(col,colW,clamp(s.b*s.b*16.0,0,0.6)); // water
 
 	//col = lerp(col, colA, s.a);
 

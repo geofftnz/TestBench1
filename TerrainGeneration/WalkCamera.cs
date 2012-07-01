@@ -17,13 +17,16 @@ namespace TerrainGeneration
     /// </summary>
     public class WalkCamera : Microsoft.Xna.Framework.GameComponent
     {
-               private MouseState prevMouse;
+              private MouseState prevMouse;
         private MouseState currMouse;
 
         private KeyboardState prevKeyboard;
         private KeyboardState currKeyboard;
 
         float movementSpeed = 0.3f;
+
+
+        public bool MouseEnabled { get; set; }
 
         /// <summary>
         /// base (ground) position 
@@ -125,6 +128,8 @@ namespace TerrainGeneration
 
             this.currMouse = Mouse.GetState();
             this.currKeyboard = Keyboard.GetState();
+
+            this.MouseEnabled = true;
         }
 
 
@@ -135,23 +140,29 @@ namespace TerrainGeneration
             this.IsMoving = false;
 
             // process input
-            prevMouse = currMouse;
-            currMouse = Mouse.GetState();
+
+            // mouse
+            if (this.MouseEnabled)
+            {
+                prevMouse = currMouse;
+                currMouse = Mouse.GetState();
+
+                Rectangle clientBounds = Game.Window.ClientBounds;
+
+                int centerX = clientBounds.Width / 2;
+                int centerY = clientBounds.Height / 2;
+                int deltaX = centerX - currMouse.X;
+                int deltaY = centerY - currMouse.Y;
+
+                Mouse.SetPosition(centerX, centerY);
+
+                this.AngleLeftRight += (float)deltaX * -0.005f;
+                this.AngleUpDown += (float)deltaY * 0.005f;
+            }
+            // keyboard
 
             prevKeyboard = currKeyboard;
             currKeyboard = Keyboard.GetState();
-
-            Rectangle clientBounds = Game.Window.ClientBounds;
-
-            int centerX = clientBounds.Width / 2;
-            int centerY = clientBounds.Height / 2;
-            int deltaX = centerX - currMouse.X;
-            int deltaY = centerY - currMouse.Y;
-
-            Mouse.SetPosition(centerX, centerY);
-
-            this.AngleLeftRight += (float)deltaX * -0.005f;
-            this.AngleUpDown += (float)deltaY * 0.005f;
             
             float speed = (float)(this.movementSpeed * gameTime.ElapsedGameTime.TotalSeconds * Math.Sqrt(this.EyeHeight));
             var pos = this.Position;
