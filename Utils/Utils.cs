@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework;
+using System.Diagnostics;
 
 namespace Utils
 {
@@ -40,6 +41,26 @@ namespace Utils
             while (x >= max) x -= max;
             return x;
         }
-        
+
+        public static double TimeFor(Action a)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            a();
+            sw.Stop();
+            return sw.Elapsed.TotalMilliseconds;
+        }
+
+        public static double AverageTime(Func<double> f, int runs)
+        {
+            if (runs < 1) return 0.0;
+            double totalms = 0.0;
+            for (int i = 0; i < runs; i++)
+            {
+                totalms += f();
+            }
+            return totalms / (double)runs;
+        }
+
     }
 }

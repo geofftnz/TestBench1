@@ -96,6 +96,7 @@
     <Compile Include="FrameCounter.cs" />
     <Compile Include="MaximumMipMapGenerator.cs" />
     <Compile Include="MultiDimSimplexNoise.cs" />
+    <Compile Include="ParallelHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimplexNoise.cs" />
     <Compile Include="TileMath.cs" />

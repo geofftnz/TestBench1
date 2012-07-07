@@ -401,6 +401,20 @@ namespace TerrainGeneration
         private void UpdateTileData()
         {
 
+            ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
+            {
+                this.tile.Data[i] = (this.Terrain.Map[i].Height) / 4096.0f;
+            });
+
+            ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
+            {
+                this.shadeTexData[i].G = (byte)((this.Terrain.Map[i].Loose * 4.0f).ClampInclusive(0.0f, 255.0f));
+                this.shadeTexData[i].B = (byte)((this.Terrain.Map[i].MovingWater * 2048.0f).ClampInclusive(0.0f, 255.0f));
+                this.shadeTexData[i].A = (byte)((this.Terrain.Map[i].Erosion * 32f).ClampInclusive(0.0f, 255.0f));  // erosion rate
+                this.shadeTexData[i].R = (byte)((this.Terrain.Map[i].Carrying * 32f).ClampInclusive(0.0f, 255.0f)); // carrying capacity
+            });
+
+            /*
             Parallel.For(0, this.tile.Height, y =>
             {
                 int i = y * this.Terrain.Width;
@@ -418,7 +432,7 @@ namespace TerrainGeneration
                     this.shadeTexData[i].R = (byte)((c.Carrying * 32f).ClampInclusive(0.0f, 255.0f)); // carrying capacity
                     i++;
                 }
-            });
+            });*/
 
             this.tile.UpdateHeights(device);
             this.tile.UpdateShadeTexture(this.shadeTexData);
@@ -427,21 +441,34 @@ namespace TerrainGeneration
         private void UpdateTileDataPass2()
         {
 
-            Parallel.For(0, this.tile.Height, y =>
+            ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
             {
-                int i = y * this.TerrainPass2.Width;
-                for (int x = 0; x < this.tile.Width; x++)
-                {
-                    var c = this.TerrainPass2.Map[i];
-                    this.tile.Data[i] = (c.Height) / 4096.0f;
-
-                    this.shadeTexData[i].R = (byte)((c.Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
-                    this.shadeTexData[i].G = (byte)((c.Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
-                    this.shadeTexData[i].B = (byte)((c.Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
-                    this.shadeTexData[i].A = 0;
-                    i++;
-                }
+                this.tile.Data[i] = (this.TerrainPass2.Map[i].Height) / 4096.0f;
             });
+            
+            ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
+            {
+                this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
+                this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
+                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
+                this.shadeTexData[i].A = 0;
+            });
+
+            //Parallel.For(0, this.tile.Height, y =>
+            //{
+            //    int i = y * this.TerrainPass2.Width;
+            //    for (int x = 0; x < this.tile.Width; x++)
+            //    {
+            //        var c = this.TerrainPass2.Map[i];
+            //        this.tile.Data[i] = (c.Height) / 4096.0f;
+
+            //        this.shadeTexData[i].R = (byte)((c.Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
+            //        this.shadeTexData[i].G = (byte)((c.Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
+            //        this.shadeTexData[i].B = (byte)((c.Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
+            //        this.shadeTexData[i].A = 0;
+            //        i++;
+            //    }
+            //});
 
             this.tile.UpdateHeights(device);
             this.tile.UpdateShadeTexture(this.shadeTexData);
