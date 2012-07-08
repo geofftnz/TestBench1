@@ -67,6 +67,8 @@ namespace TerrainGeneration
             /// The remainder gets added regardless.
             /// </summary>
             public float SnowFallWindDirectionComponent;
+
+            public float InitialSnowFallRate;
         }
 
         public int Width { get; private set; }
@@ -84,8 +86,25 @@ namespace TerrainGeneration
 
         private float CurrentWindAngle = 1.7f;
         private float CurrentWindSpeed = 0.2f;
-        private Vector3 CurrentWindVector = Vector3.Normalize(new Vector3(1f,1f,-0.5f));
-        
+        private Vector3 CurrentWindVector = Vector3.Normalize(new Vector3(1f, 1f, -0.5f));
+        private float _CurrentSnowFallRate = 0f;
+        public float CurrentSnowFallRate
+        {
+            get
+            {
+                return this._CurrentSnowFallRate;
+            }
+            set
+            {
+                if (value < 0f)
+                {
+                    this._CurrentSnowFallRate = 0f;
+                    return;
+                }
+                this._CurrentSnowFallRate = value;
+            }
+        }
+
 
 
         private Random rand = new Random();
@@ -103,6 +122,8 @@ namespace TerrainGeneration
             this.parameters.WindNumParticles = 4000;
 
             this.parameters.SnowFallWindDirectionComponent = 0.8f;
+            this.parameters.InitialSnowFallRate = 0.0f;
+            this.CurrentSnowFallRate = this.parameters.InitialSnowFallRate;
 
             //this.parameters.MinSnowFallAmount = 0f;
             //this.parameters.MaxSnowFallAmount = 0.1f;
@@ -143,6 +164,10 @@ namespace TerrainGeneration
                 this.Map[i].Snow = 0f;
                 this.Map[i].Powder = 0f;
             }
+            this.CalculateNormals();
+
+            // 3cm should be visible
+            //this.AddPowder(0.05f, new Vector3(0f,0f,-1f));
         }
 
         public void ModifyTerrain()
@@ -159,18 +184,19 @@ namespace TerrainGeneration
             this.CurrentWindVector.Z = -1f;
             this.CurrentWindVector.Normalize();
 
-            this.AddPowder(0.05f, this.CurrentWindVector);
+            
+            this.AddPowder(this.CurrentSnowFallRate, this.CurrentWindVector);
 
             switch (this.Iterations % 2)
             {
                 case 0:
-                    this.SlumpPowder(0.78f, 0.01f, 0.02f);
+                    this.SlumpPowder(0.78f, 0.025f, 0.05f);// repose angle means 0.78 slope, 2.5cm min depth, slump 5%
                     break;
                 case 1:
-                    //this.CompactPowder(0.5f, 0.02f, 0.5f);
+                    this.CompactPowder(1.0f, 0.01f, 0.5f);
                     break;
             }
-            
+
 
             //this.AddPowder(50000,0.2f);
             //this.SlumpPowder(25000, 0.78f, 0.01f, 0.1f);
@@ -251,14 +277,14 @@ namespace TerrainGeneration
         /// <param name="amount"></param>
         private void SlumpPowderOneDirection(float slopeThreshold, float depthThreshold, float amount, int xofs, int yofs)
         {
-            ParallelHelper.For2D(this.Width, this.Height, (x, y, pTo) =>
+            ParallelHelper.For2DParallelOffset(this.Width, this.Height, xofs, yofs, (pTo, pFrom) =>
             {
-                int pFrom = C(x + xofs, y + yofs);  // cell we're taking material from
+                //int pFrom = C(x + xofs, y + yofs);  // cell we're taking material from
                 float h = this.Map[pTo].Height;
-                float transferAmount = 0f;
-                
-                float powder = this.Map[pFrom].Powder; // can only slump powder.
-                if (powder > depthThreshold)
+                this.TempDiffMap[pTo] = 0f;
+
+                float powder = this.Map[pFrom].Powder - depthThreshold; // can only slump powder over our depth threshold
+                if (powder > 0f)
                 {
                     float diff = (((this.Map[pFrom].Height) - h) - slopeThreshold);
                     if (diff > 0f)
@@ -268,11 +294,9 @@ namespace TerrainGeneration
                             diff = powder;
                         }
 
-                        transferAmount = diff * amount;
+                        this.TempDiffMap[pTo] = diff * amount;
                     }
                 }
-                
-                this.TempDiffMap[pTo] = transferAmount;
             });
 
             this.CombineDiffMapsForDirection(xofs, yofs);
@@ -310,20 +334,18 @@ namespace TerrainGeneration
 
             ParallelHelper.For2D(this.Width, this.Height, (i) =>
             {
-
                 float powder = this.Map[i].Powder;
-                float diff = powder - minDepth;
-                if (diff > 0f)
+                if (powder > minDepth)
                 {
-                    diff *= amount;
-                    this.Map[i].Powder -= diff;
-                    this.Map[i].Snow += diff * invDensityRatio;
+                    powder = (powder - minDepth) * amount;
+                    this.Map[i].Powder -= powder;
+                    this.Map[i].Snow += powder * invDensityRatio;
                 }
             });
         }
 
 
-        public void SlumpPowderRandom(int numIterations,float slopeThreshold, float depthThreshold, float amount)
+        public void SlumpPowderRandom(int numIterations, float slopeThreshold, float depthThreshold, float amount)
         {
             float _threshold2 = (float)(slopeThreshold * Math.Sqrt(2.0));
             this.ClearTempDiffMap();
@@ -418,7 +440,7 @@ namespace TerrainGeneration
                     this.Map[index].Powder -= diff;
                     this.Map[index].Snow += diff * invDensityRatio;
                 }
-                
+
             }
         }
 

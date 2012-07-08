@@ -12,11 +12,11 @@ namespace Utils
 
         public static void For2D(int Width, int Height, Action<int, int, int> op)
         {
-            For2DParallelUnrolled(Width, Height, op);
+            For2DParallel(Width, Height, op);
         }
         public static void For2D(int Width, int Height, Action< int> op)
         {
-            For2DParallelUnrolled(Width, Height, op);
+            For2DParallel(Width, Height, op);
         }
 
         public static void For2DSingle(int Width, int Height, Action<int, int, int> op)
@@ -58,6 +58,37 @@ namespace Utils
                 }
             });
         }
+
+
+        public static void For2DParallelOffset(int Width, int Height, int xofs, int yofs, Action<int, int>  op)
+        {
+
+            Parallel.For(0, Height, (y) =>
+            {
+                int i = y * Width;
+                int y2 = ((y + yofs + Height) & (Height - 1));
+                int x2 = (xofs + Width) & (Width - 1);
+                int i2 = x2 + y2 * Width;
+                op(i, i2);
+                i++;
+
+                i2 = 1 + xofs + y2 * Width;
+                for (int x = 1; x < Width-1; x++)
+                {
+                    op(i,i2);
+                    i++; i2++;
+                }
+
+                i2 = ((Width - 1 + xofs) & (Width-1)) + y2 * Width;
+                op(i, i2);
+
+            });
+        }
+
+
+
+
+
         public static void For2DParallelUnrolled(int Width, int Height, Action<int, int, int> op)
         {
             if ((Width & 0x07) == 0)

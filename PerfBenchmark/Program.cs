@@ -9,7 +9,7 @@ namespace PerfBenchmark
     {
         static void Main(string[] args)
         {
-            int runs = 100;
+            int runs = 20;
 
             ParallelForBenchmark benchmark = new ParallelForBenchmark(1024,1024);
 

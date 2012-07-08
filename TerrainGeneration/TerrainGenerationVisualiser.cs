@@ -262,6 +262,17 @@ namespace TerrainGeneration
                 this.StatusMessage = string.Format("Mouselook {0}", this.walkCamera.MouseEnabled ? "enabled" : "disabled");
             }
 
+            if (WasPressed(Keys.OemMinus) && this.TerrainGenPass == 2)
+            {
+                this.TerrainPass2.CurrentSnowFallRate -= 0.005f;
+                this.StatusMessage = string.Format("Snowfall rate reduced to {0:0.000}", this.TerrainPass2.CurrentSnowFallRate);
+            }
+            if (WasPressed(Keys.OemPlus) && this.TerrainGenPass == 2)
+            {
+                this.TerrainPass2.CurrentSnowFallRate += 0.005f;
+                this.StatusMessage = string.Format("Snowfall rate increased to {0:0.000}", this.TerrainPass2.CurrentSnowFallRate);
+            }
+
             if (WasPressed(Keys.P))
             {
                 switch (this.TerrainGenPass)
@@ -448,9 +459,9 @@ namespace TerrainGeneration
             
             ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
             {
-                this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
-                this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
-                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
+                this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 256f).ClampInclusive(0.0f, 255.0f)); // ice
+                this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 256f).ClampInclusive(0.0f, 255.0f)); // snow
+                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 256f).ClampInclusive(0.0f, 255.0f)); // powder
                 this.shadeTexData[i].A = 0;
             });
 
