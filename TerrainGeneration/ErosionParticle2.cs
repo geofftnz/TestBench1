@@ -6,12 +6,10 @@ using Microsoft.Xna.Framework;
 
 namespace TerrainGeneration
 {
-    public class ErosionParticle2
+    public class WindErosionParticle
     {
         public Vector2 Pos;
-        //public Vector2 Vel;
-
-        public Vector3 Fall;
+        public Vector3 Vel;
 
         public float CarryingCapacity;
         public float CarryingAmount;
@@ -20,14 +18,14 @@ namespace TerrainGeneration
         // slowly degrades the carrying capacity of the particle - when it reaches 1, reset.
         public float CarryingDecay;
 
-        public ErosionParticle2()
+        public WindErosionParticle()
         {
             this.Pos = new Vector2(0);
-            this.Fall = new Vector3(0);
+            this.Vel = new Vector3(0);
             Reset(0, 0);
         }
 
-        public ErosionParticle2(int x, int y)
+        public WindErosionParticle(int x, int y)
             : this()
         {
             Reset(x, y);
@@ -50,9 +48,9 @@ namespace TerrainGeneration
             this.CarryingCapacity = 0.0f;
             this.Speed = 0f;
             this.CarryingDecay = 0.001f;
-            this.Fall.X = 0f;
-            this.Fall.Y = 0f;
-            this.Fall.Z = 0f;
+            this.Vel.X = 0f;
+            this.Vel.Y = 0f;
+            this.Vel.Z = 0f;
         }
 
         public void Reset(int x, int y)

@@ -459,9 +459,9 @@ namespace TerrainGeneration
             
             ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
             {
-                this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 256f).ClampInclusive(0.0f, 255.0f)); // ice
-                this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 256f).ClampInclusive(0.0f, 255.0f)); // snow
-                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 256f).ClampInclusive(0.0f, 255.0f)); // powder
+                this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
+                this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
+                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
                 this.shadeTexData[i].A = 0;
             });
 

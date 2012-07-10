@@ -80,7 +80,7 @@ namespace TerrainGeneration
         private Vector3[] MapNormals;
         private long Iterations = 0;
 
-        private List<ErosionParticle2> WindParticles = new List<ErosionParticle2>();
+        private List<WindErosionParticle> WindParticles = new List<WindErosionParticle>();
 
         public Parameters parameters;
 
@@ -133,7 +133,7 @@ namespace TerrainGeneration
 
             for (int i = 0; i < this.parameters.WindNumParticles; i++)
             {
-                this.WindParticles.Add(new ErosionParticle2(rand.Next(this.Width), rand.Next(this.Height)));
+                this.WindParticles.Add(new WindErosionParticle(rand.Next(this.Width), rand.Next(this.Height)));
             }
         }
 
@@ -207,6 +207,10 @@ namespace TerrainGeneration
         }
 
 
+
+
+
+
         public void CalculateNormals()
         {
             ParallelHelper.For2DParallel(this.Width, this.Height, (cx, cy, i) =>
@@ -222,7 +226,6 @@ namespace TerrainGeneration
                 this.MapNormals[i].Normalize();
             });
         }
-
 
         public void AddPowderRandom(int numSamples, float amount)
         {

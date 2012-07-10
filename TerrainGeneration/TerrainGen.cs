@@ -127,7 +127,7 @@ namespace TerrainGeneration
         public Cell[] Map { get; private set; }
         private float[] TempDiffMap;
 
-        private List<ErosionParticle2> WaterParticles = new List<ErosionParticle2>();
+        private List<WindErosionParticle> WaterParticles = new List<WindErosionParticle>();
 
         public TerrainGen(int width, int height)
         {
@@ -182,7 +182,7 @@ namespace TerrainGeneration
 
             for (int i = 0; i < this.WaterNumParticles; i++)
             {
-                this.WaterParticles.Add(new ErosionParticle2(r.Next(this.Width), r.Next(this.Height)));
+                this.WaterParticles.Add(new WindErosionParticle(r.Next(this.Width), r.Next(this.Height)));
             }
 
         }
@@ -412,12 +412,12 @@ namespace TerrainGeneration
                     turbulence.X = (float)rand.NextDouble() - 0.5f;
                     turbulence.Y = (float)rand.NextDouble() - 0.5f;
 
-                    wp.Fall = wp.Fall * this.WaterMomentumFactor + fall + turbulence * this.WaterTurbulence;
-                    wp.Fall.Normalize();
+                    wp.Vel = wp.Vel * this.WaterMomentumFactor + fall + turbulence * this.WaterTurbulence;
+                    wp.Vel.Normalize();
 
                     // compute exit point and new cell coords
-                    tileDir.X = wp.Fall.X;
-                    tileDir.Y = wp.Fall.Y;
+                    tileDir.X = wp.Vel.X;
+                    tileDir.Y = wp.Vel.Y;
 
                     // sanity check: If the direction is changing such that we're going to get stuck on an edge, move point out into tile
                     if (tileDir.X < 0f)
