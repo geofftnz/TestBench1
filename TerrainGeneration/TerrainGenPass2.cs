@@ -190,10 +190,10 @@ namespace TerrainGeneration
             switch (this.Iterations % 2)
             {
                 case 0:
-                    this.SlumpPowder(0.78f, 0.025f, 0.05f);// repose angle means 0.78 slope, 2.5cm min depth, slump 5%
+                    this.SlumpPowder(0.78f, 0.0f, 0.05f);// repose angle means 0.78 slope, 0cm min depth, slump 5%
                     break;
                 case 1:
-                    this.CompactPowder(1.0f, 0.01f, 0.5f);
+                    this.CompactPowder(0.1f, 0.01f, 0.5f);
                     break;
             }
 

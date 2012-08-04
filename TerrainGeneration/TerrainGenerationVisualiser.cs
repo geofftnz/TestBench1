@@ -461,7 +461,7 @@ namespace TerrainGeneration
             {
                 this.shadeTexData[i].R = (byte)((this.TerrainPass2.Map[i].Ice * 64f).ClampInclusive(0.0f, 255.0f)); // ice
                 this.shadeTexData[i].G = (byte)((this.TerrainPass2.Map[i].Snow * 64f).ClampInclusive(0.0f, 255.0f)); // snow
-                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 64f).ClampInclusive(0.0f, 255.0f)); // powder
+                this.shadeTexData[i].B = (byte)((this.TerrainPass2.Map[i].Powder * 1024f).ClampInclusive(0.0f, 255.0f)); // powder
                 this.shadeTexData[i].A = 0;
             });
 

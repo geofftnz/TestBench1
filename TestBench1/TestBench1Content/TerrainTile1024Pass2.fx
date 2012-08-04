@@ -349,7 +349,7 @@ float4 GenerateCol(float3 p)
 	// powder - pure white -> bluish
 	float4 colPowL = {0.95,0.95,0.97,1.0};
 	float4 colPowD = {0.4,0.45,0.6,1.0};
-	float powAmount = clamp(s.b*4.0,0,1);
+	float powAmount = clamp(s.b,0,1);
 	col = lerp(col,lerp(colPowD,colPowL,diffuse),powAmount);
 
 	col.a = 1.0f;
