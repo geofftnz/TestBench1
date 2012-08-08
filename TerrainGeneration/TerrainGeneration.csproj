@@ -100,6 +100,7 @@
     <Compile Include="TerrainGenerationVisualiser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TerrainGenPass2.cs" />
+    <Compile Include="TerrainGenWater2.cs" />
     <Compile Include="WalkCamera.cs" />
   </ItemGroup>
   <ItemGroup>

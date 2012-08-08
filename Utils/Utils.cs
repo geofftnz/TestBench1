@@ -14,6 +14,11 @@ namespace Utils
             return (x.CompareTo(min) >= 0) ? ((x.CompareTo(max) <= 0) ? x : max) : min;
         }
 
+        public static float ClampLower(this float x, float lowerBound)
+        {
+            return x >= lowerBound ? x : lowerBound;
+        }
+
         public static Color ToColor(this Vector3 v)
         {
             return new Color(v.X * 0.5f + 0.5f, v.Y * 0.5f + 0.5f, v.Z * 0.5f + 0.5f,1.0f);

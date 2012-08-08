@@ -169,6 +169,29 @@ namespace TerrainGeneration
             // 3cm should be visible
             //this.AddPowder(0.05f, new Vector3(0f,0f,-1f));
         }
+        public void InitFromPass1(TerrainGenWater2 pass1)
+        {
+            if (pass1 == null)
+            {
+                throw new ArgumentNullException("pass1");
+            }
+            if (pass1.Width != this.Width || pass1.Height != this.Height)
+            {
+                throw new InvalidOperationException("Pass1 terrain is a different size.");
+            }
+
+            for (int i = 0; i < this.Width * this.Height; i++)
+            {
+                this.Map[i].Rock = pass1.Map[i].Height;
+                this.Map[i].Ice = 0f;
+                this.Map[i].Snow = 0f;
+                this.Map[i].Powder = 0f;
+            }
+            this.CalculateNormals();
+
+            // 3cm should be visible
+            //this.AddPowder(0.05f, new Vector3(0f,0f,-1f));
+        }
 
         public void ModifyTerrain()
         {

@@ -20,7 +20,7 @@ namespace TerrainGeneration
         /// <summary>
         /// terrain generation object that we will be visualising/controlling
         /// </summary>
-        public TerrainGen Terrain { get; set; }
+        public TerrainGenWater2 Terrain { get; set; }
         public TerrainGenPass2 TerrainPass2 { get; set; }
         public int TerrainGenPass { get; private set; }
 
@@ -107,7 +107,7 @@ namespace TerrainGeneration
 
         public TerrainGenerationVisualiser()
         {
-            this.Terrain = new TerrainGen(1024, 1024);
+            this.Terrain = new TerrainGenWater2(1024, 1024);
             this.TerrainPass2 = new TerrainGenPass2(1024, 1024);
 
             this.TerrainGenPass = 1;
@@ -157,7 +157,7 @@ namespace TerrainGeneration
             device = graphics.GraphicsDevice;
             this.sprites = new SpriteBatch(device);
             terrainVisEffect = Content.Load<Effect>("GenerationVisualiser");
-            terrainTileEffect = Content.Load<Effect>("TerrainTile1024");
+            terrainTileEffect = Content.Load<Effect>("TerrainTile1024Water2");
             terrainTileEffectPass2 = Content.Load<Effect>("TerrainTile1024Pass2");
             statusFont = Content.Load<SpriteFont>("statusFont");
 
@@ -419,12 +419,21 @@ namespace TerrainGeneration
 
             ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
             {
+                this.shadeTexData[i].R = (byte)((this.Terrain.Map[i].Loose * 4.0f).ClampInclusive(0.0f, 255.0f));  // loose depth
+                this.shadeTexData[i].G = (byte)((this.Terrain.Map[i].Water * 8.0f).ClampInclusive(0.0f, 255.0f));  // water depth
+                this.shadeTexData[i].B = (byte)((this.Terrain.Map[i].DeltaHeight * 32f).ClampInclusive(-128.0f, 127.0f) + 128.0f);  // avg change in height 
+                this.shadeTexData[i].A = (byte)0; 
+            });
+
+/*
+            ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
+            {
                 this.shadeTexData[i].G = (byte)((this.Terrain.Map[i].Loose * 4.0f).ClampInclusive(0.0f, 255.0f));
                 this.shadeTexData[i].B = (byte)((this.Terrain.Map[i].MovingWater * 2048.0f).ClampInclusive(0.0f, 255.0f));
                 this.shadeTexData[i].A = (byte)((this.Terrain.Map[i].Erosion * 32f).ClampInclusive(0.0f, 255.0f));  // erosion rate
                 this.shadeTexData[i].R = (byte)((this.Terrain.Map[i].Carrying * 32f).ClampInclusive(0.0f, 255.0f)); // carrying capacity
             });
-
+*/
             /*
             Parallel.For(0, this.tile.Height, y =>
             {
