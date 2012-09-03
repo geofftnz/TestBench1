@@ -79,6 +79,7 @@ namespace TerrainGeneration
         public Cell[] ErosionMap { get; private set; }
         private float[] TempDiffMap;
         private float[] TotalCellDrop;
+        private float[] MaxCellDrop;
 
         public TerrainGenWater2(int width, int height)
         {
@@ -88,6 +89,7 @@ namespace TerrainGeneration
             this.ErosionMap = new Cell[this.Width * this.Height];
             this.TempDiffMap = new float[this.Width * this.Height];
             this.TotalCellDrop = new float[this.Width * this.Height];
+            this.MaxCellDrop = new float[this.Width * this.Height];
 
             this.Iterations = 0;
             this.AtmosphericWater = Parameters.TotalWaterBudget;
@@ -214,36 +216,35 @@ namespace TerrainGeneration
 
             ParallelHelper.For2D(this.Width, this.Height, (x, y, i) =>
             {
-                float drop = 0f;
-                float h = this.Map[i].Height;
-                drop += (h - this.Map[C(x - 1, y)].Height).ClampLower(0f);
-                drop += (h - this.Map[C(x + 1, y)].Height).ClampLower(0f);
-                drop += (h - this.Map[C(x, y - 1)].Height).ClampLower(0f);
-                drop += (h - this.Map[C(x, y + 1)].Height).ClampLower(0f);
+                float drop = 0f, maxdrop = 0f;
+                float d, h = this.Map[i].Height;
+                d = h - this.Map[C(x, y - 1)].Height; if (d > 0f) { drop += d; if (d > maxdrop) maxdrop = d; }
+                d = h - this.Map[C(x - 1, y)].Height; if (d > 0f) { drop += d; if (d > maxdrop) maxdrop = d; }
+                d = h - this.Map[C(x + 1, y)].Height; if (d > 0f) { drop += d; if (d > maxdrop) maxdrop = d; }
+                d = h - this.Map[C(x, y + 1)].Height; if (d > 0f) { drop += d; if (d > maxdrop) maxdrop = d; }
 
-                drop += (h - this.Map[C(x - 1, y - 1)].Height).ClampLower(0f) * 0.707f;
-                drop += (h - this.Map[C(x - 1, y + 1)].Height).ClampLower(0f) * 0.707f;
-                drop += (h - this.Map[C(x + 1, y - 1)].Height).ClampLower(0f) * 0.707f;
-                drop += (h - this.Map[C(x + 1, y + 1)].Height).ClampLower(0f) * 0.707f;
+                //d = (h - this.Map[C(x - 1, y - 1)].Height); drop += d.ClampLower(0f); if (d > maxdrop) maxdrop = d;
+                //d = (h - this.Map[C(x - 1, y + 1)].Height); drop += d.ClampLower(0f); if (d > maxdrop) maxdrop = d;
+                //d = (h - this.Map[C(x + 1, y - 1)].Height); drop += d.ClampLower(0f); if (d > maxdrop) maxdrop = d;
+                //d = (h - this.Map[C(x + 1, y + 1)].Height); drop += d.ClampLower(0f); if (d > maxdrop) maxdrop = d;
 
                 this.TotalCellDrop[i] = drop;
+                this.MaxCellDrop[i] = maxdrop;
             });
 
             Action<int, int, float, float, float> MoveWater = (pFrom, pTo, height, waterAmount, totalDrop) =>
             {
                 float destHeight = this.Map[pTo].Height;
-                if (destHeight < height)
+                if (height > destHeight) // going downhill.
                 {
-                    float dropAmount = (height - destHeight).ClampLower(0f) / totalDrop;
-                    if (dropAmount > waterAmount)
-                    {
-                        dropAmount = waterAmount;
-                    }
-                    float moveAmount = dropAmount * 0.1f;
+                    float moveAmount = waterAmount * ((height - destHeight) / totalDrop);
 
-                    this.ErosionMap[pFrom].Water -= moveAmount;
-                    this.ErosionMap[pTo].Water += moveAmount;
+                    float waterMoveAmount = moveAmount;// *0.8f;
 
+                    this.ErosionMap[pFrom].Water -= waterMoveAmount;
+                    this.ErosionMap[pTo].Water += waterMoveAmount;
+
+                    /*
                     float groundFrom = this.Map[pFrom].GroundLevel;
                     float groundTo = this.Map[pTo].GroundLevel;
 
@@ -252,7 +253,7 @@ namespace TerrainGeneration
                     {
                         moveAmount *= 0.1f; // erode slower than we move water.
 
-                        float diff = (groundFrom - groundTo)*0.1f;
+                        float diff = (groundFrom - groundTo) * 0.1f;
                         if (diff > moveAmount)
                         {
                             diff = moveAmount;
@@ -260,7 +261,7 @@ namespace TerrainGeneration
 
                         float looseAvailable = this.Map[pFrom].Loose;
 
-                        if (looseAvailable > 0.005f)
+                        if (looseAvailable > 0.0001f)
                         {
                             if (diff > looseAvailable)
                             {
@@ -276,7 +277,7 @@ namespace TerrainGeneration
                             this.ErosionMap[pTo].Loose += diff;
                         }
 
-                    }
+                    }*/
                 }
             };
 
@@ -286,19 +287,20 @@ namespace TerrainGeneration
                 float totalDrop = this.TotalCellDrop[i];
                 if (totalDrop > 0.0f)
                 {
+                    float maxDrop = this.TotalCellDrop[i] * 0.3f;  // amount of water we'd need to move to equalise heights.
                     float h = this.Map[i].Height;
-                    float waterAmount = this.Map[i].Water;
+                    float waterAmount = maxDrop > this.Map[i].Water ? this.Map[i].Water : maxDrop;  // can't move more water than we have
 
+                    MoveWater(i, C(x, y - 1), h, waterAmount, totalDrop);
                     MoveWater(i, C(x - 1, y), h, waterAmount, totalDrop);
                     MoveWater(i, C(x + 1, y), h, waterAmount, totalDrop);
-                    MoveWater(i, C(x, y - 1), h, waterAmount, totalDrop);
                     MoveWater(i, C(x, y + 1), h, waterAmount, totalDrop);
 
-                    waterAmount *= 0.707f;
-                    MoveWater(i, C(x - 1, y - 1), h, waterAmount, totalDrop);
-                    MoveWater(i, C(x - 1, y + 1), h, waterAmount, totalDrop);
-                    MoveWater(i, C(x + 1, y - 1), h, waterAmount, totalDrop);
-                    MoveWater(i, C(x + 1, y + 1), h, waterAmount, totalDrop);
+                    //waterAmount *= 0.707f;
+                    //MoveWater(i, C(x - 1, y - 1), h, waterAmount, totalDrop);
+                    //MoveWater(i, C(x - 1, y + 1), h, waterAmount, totalDrop);
+                    //MoveWater(i, C(x + 1, y - 1), h, waterAmount, totalDrop);
+                    //MoveWater(i, C(x + 1, y + 1), h, waterAmount, totalDrop);
 
                 }
             });
