@@ -170,7 +170,7 @@ namespace TerrainGeneration
             this.WaterErosionCollapseToAmount = 0.02f;
             this.WaterErosionMinSpeed = 0.01f;
             this.WaterErosionOverCapacityFactor = 3.0f;
-            this.WaterAccumulatePerFrame = 0.0001f; // 0.002f;
+            this.WaterAccumulatePerFrame = 0.001f; // 0.002f;
 
             this.WaterSpeedLowpassAmount = 0.2f;  // 0.8
             this.WaterMomentumFactor = 0f; // 0.05f;
@@ -226,33 +226,26 @@ namespace TerrainGeneration
         public void InitTerrain1()
         {
             this.Clear(0.0f);
-
+            /*
             this.AddSimplexNoise(10, 0.3f / (float)this.Width, 2000.0f);
             this.AddSimplexNoise(10, 0.43f / (float)this.Width, 1000.0f, h => Math.Abs(h), h => h * h);
 
-
-            //this.AddSimplexNoise(6, 3.2f / (float)this.Width, 400.0f, h => h, h => -(h * h * h * h));
-            //this.AddSimplexNoise(3, 2.7f / (float)this.Width, 100.0f);
-            //this.AddSimplexNoise(6, 17.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => h * h * h);
-
             this.AddSimplexNoise(10, 7.7f / (float)this.Width, 50.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
-            this.AddSimplexNoise(5, 37.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
+            this.AddSimplexNoise(5, 37.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);*/
 
+            this.AddSimplexNoise(7, 0.3f / (float)this.Width, 2000.0f, h => (h >= 0f ? h : -h), h => h * h);
+
+            this.AddMultipliedSimplexNoise(
+                3, 1.0f / (float)this.Width, h => h, 0.6f, 0.5f,
+                10, 1.7f / (float)this.Width, h => (h >= 0f ? h : -h), 0.1f, 1.0f,
+                h => h, 500.0f);
+
+
+            //this.AddSimplexNoise(5, 3.3f / (float)this.Width, 50.0f);
             this.AddLooseMaterial(15.0f);
-            this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 10.0f);
+            //this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 10.0f);
 
 
-
-            //this.AddSimplexPowNoise(4, 1.7f / (float)this.Width, 500.0f, 4.0f, x => Math.Abs(x));
-            //this.AddSimplexNoise(9, 0.3f / (float)this.Width, 2000.0f, x => Math.Abs(x)); // really big hills
-
-
-            //this.AddSimplexNoise(2, 0.1f, 1.0f);
-
-            //this.AddDiscontinuousNoise(3,0.003f, 200.0f, 0.1f);
-
-            //this.AddSimplexNoise(4, 0.002f, 5.0f);
-            //this.AddSimplexNoise(4, 0.01f, 0.2f);
 
             this.SetBaseLevel();
         }
@@ -542,7 +535,7 @@ namespace TerrainGeneration
                                 (
                                     ((this.WaterErosionSpeedCoefficientMin + speed2) * crossdistance * this.WaterErosionSpeedCoefficient) * // more speed = more erosion.
                                     (1f + this.Map[celli].MovingWater * this.WaterErosionWaterDepthMultiplier) // erode more where there is lots of water.
-                                ) *  
+                                ) *
                                 (1.0f - wp.CarryingDecay); // decay erosion factor with particle age so they die gracefully. Decay faster than carrying capacity.
 
                             // we can only erode the difference between our height and our lowest neighbour.
@@ -753,6 +746,72 @@ namespace TerrainGeneration
                 }
             );
         }
+
+        /// <summary>
+        /// One set of noise multiplied by another.
+        /// </summary>
+        /// <param name="octaves"></param>
+        /// <param name="scale"></param>
+        /// <param name="amplitude"></param>
+        /// <param name="transform"></param>
+        /// <param name="postTransform"></param>
+        public void AddMultipliedSimplexNoise(
+            int octaves1, float scale1, Func<float, float> transform1, float offset1, float mul1,
+            int octaves2, float scale2, Func<float, float> transform2, float offset2, float mul2,
+            Func<float, float> postTransform,
+            float amplitude)
+        {
+            var r = new Random();
+
+            float rx = (float)r.NextDouble();
+            float ry = (float)r.NextDouble();
+
+
+            Parallel.For(0, this.Height,
+                (y) =>
+                {
+                    int i = (int)y * this.Width;
+                    float s = (float)y / (float)this.Height;
+                    for (int x = 0; x < this.Width; x++)
+                    {
+                        float t = (float)x / (float)this.Width;
+
+                        float h = 0.0f;
+
+                        for (int j1 = 1; j1 <= octaves1; j1++)
+                        {
+                            h += transform1(SimplexNoise.wrapnoise(s, t, (float)this.Width, (float)this.Height, rx, ry, (float)(scale1 * (1 << j1))) * (float)(1.0 / ((1 << j1) + 1)));
+                        }
+
+                        h = h * mul1 + offset1;
+
+                        float h2 = 0f;
+
+                        for (int j2 = 1; j2 <= octaves2; j2++)
+                        {
+                            h2 += transform2(SimplexNoise.wrapnoise(s, t, (float)this.Width, (float)this.Height, rx, ry, (float)(scale2 * (1 << j2))) * (float)(1.0 / ((1 << j2) + 1)));
+                        }
+
+                        h2 = h2 * mul2 + offset2;
+
+                        h *= h2;
+
+
+                        if (postTransform != null)
+                        {
+                            this.Map[i].Hard += postTransform(h) * amplitude;
+                        }
+                        else
+                        {
+                            this.Map[i].Hard += h * amplitude;
+                        }
+                        i++;
+                    }
+                }
+            );
+        }
+
+
         public void AddDiscontinuousNoise(int octaves, float scale, float amplitude, float threshold)
         {
             var r = new Random(1);
@@ -914,7 +973,7 @@ namespace TerrainGeneration
 
                     return diff;
                 }
-                
+
                 return 0f;
             };
 
