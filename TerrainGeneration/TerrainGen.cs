@@ -170,11 +170,11 @@ namespace TerrainGeneration
             this.WaterErosionCollapseToAmount = 0.02f;
             this.WaterErosionMinSpeed = 0.01f;
             this.WaterErosionOverCapacityFactor = 3.0f;
-            this.WaterAccumulatePerFrame = 0.002f;
+            this.WaterAccumulatePerFrame = 0.0001f; // 0.002f;
 
             this.WaterSpeedLowpassAmount = 0.2f;  // 0.8
-            this.WaterMomentumFactor = 0.05f;
-            this.WaterTurbulence = 0.05f;
+            this.WaterMomentumFactor = 0f; // 0.05f;
+            this.WaterTurbulence = 0f; // 0.05f;
 
             this.Iterations = 0;
 
