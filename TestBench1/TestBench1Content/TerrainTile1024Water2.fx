@@ -299,8 +299,8 @@ float4 GenerateCol(float3 p)
 	float4 colL1 = {0.41,0.39,0.16,1.0};
 	float4 colL2 = {0.41,0.39,0.16,1.0};
 
-	float4 colW1 = {0.4,0.6,0.9,1.0};
-	float4 colW2 = {0.2,0.4,0.6,1.0};
+	float4 colW1 = {0.7,0.8,1.0,1.0};
+	float4 colW2 = {0.2,0.4,1.0,1.0};
 
 	// calculate diffuse lighting
 	float nt = texel * 0.5;
@@ -320,8 +320,8 @@ float4 GenerateCol(float3 p)
 	float4 col = lerp(lerp(colH1,colH2,h),lerp(colL1,colL2,h),looseblend);
 
 	// water
-	float4 colW = lerp(colW1,colW2,clamp(s.g,0,1));
-	float wa = clamp(s.g*s.g*32.0,0.02,1.02) - 0.02;
+	float4 colW = lerp(colW1,colW2,s.g);
+	float wa = clamp(s.g*s.g*64.0f,0.0f,0.8f);
 	col = lerp(col, colW, wa); // water
 
 	// lighting

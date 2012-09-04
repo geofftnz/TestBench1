@@ -18,8 +18,8 @@ namespace TerrainGeneration
 
         public class TerrainParameters
         {
-            public float TotalWaterBudget = 1024f * 1024f * 2.0f;
-            public float MaxRainPerFrame = 1024f * 1024f * 0.05f;
+            public float TotalWaterBudget = 1024f * 1024f * 10.0f;
+            public float MaxRainPerFrame = 1024f * 1024f * 0.01f;
         }
 
         public TerrainParameters Parameters = new TerrainParameters();
@@ -80,6 +80,8 @@ namespace TerrainGeneration
         private float[] TempDiffMap;
         private float[] TotalCellDrop;
         private float[] MaxCellDrop;
+        private int[] WaterMap;
+        private int WaterMapSize;
 
         public TerrainGenWater2(int width, int height)
         {
@@ -90,6 +92,8 @@ namespace TerrainGeneration
             this.TempDiffMap = new float[this.Width * this.Height];
             this.TotalCellDrop = new float[this.Width * this.Height];
             this.MaxCellDrop = new float[this.Width * this.Height];
+            this.WaterMap = new int[this.Width * this.Height];
+            this.WaterMapSize = 0;
 
             this.Iterations = 0;
             this.AtmosphericWater = Parameters.TotalWaterBudget;
@@ -119,15 +123,17 @@ namespace TerrainGeneration
         {
             this.Clear(0.0f);
 
-            this.AddSimplexNoise(10, 0.9f / (float)this.Width, 1000.0f);
+            this.AddSimplexNoise(6, 0.9f / (float)this.Width, 1000.0f);
             this.AddSimplexNoise(10, 1.43f / (float)this.Width, 800.0f, h => Math.Abs(h), h => h * h);
-            this.AddSimplexNoise(6, 3.7f / (float)this.Width, 400.0f, h => h * h, h => h * h);
+            this.AddSimplexNoise(8, 3.7f / (float)this.Width, 400.0f, h => h * h, h => h * h);
 
             this.AddSimplexNoise(10, 7.7f / (float)this.Width, 30.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
             this.AddSimplexNoise(5, 37.7f / (float)this.Width, 10.0f, h => Math.Abs(h), h => (h * h * 2f).ClampInclusive(0.1f, 10.0f) - 0.1f);
 
             this.AddLooseMaterial(15.0f);
             this.AddSimplexNoiseToLoose(5, 17.7f / (float)this.Width, 10.0f);
+
+            this.AtmosphericWater = Parameters.TotalWaterBudget;
 
             this.SetBaseLevel();
         }
@@ -139,10 +145,12 @@ namespace TerrainGeneration
             {
                 float rainAmount = this.AtmosphericWater.ClampInclusive(0f, this.Parameters.MaxRainPerFrame);
                 this.AtmosphericWater -= rainAmount;
-                this.AddRain(rainAmount);
+                //this.AddRain(rainAmount);
+                this.AddRainRandom(25000.0f * 0.1f, 25000);
             }
 
-            this.RunWater();
+            //this.RunWater();
+            this.RunWaterRandom(50000);
 
             //this.RunWater2(this.WaterIterationsPerFrame);
             //this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
@@ -194,6 +202,144 @@ namespace TerrainGeneration
             {
                 this.Map[i].Water += amount;
             });
+        }
+
+        public void AddRainRandom(float totalAmount, int numDrops)
+        {
+            // water per cell
+            float amount = totalAmount / (float)numDrops;
+            Random rand = new Random();
+            int terrainSize = this.Width * this.Height;
+            for (int i = 0; i < numDrops; i++)
+            {
+                // pick a random point
+                this.Map[rand.Next(terrainSize)].Water += amount;
+            }
+
+        }
+
+
+
+        /// <summary>
+        /// A stochastic water flow algorithm.
+        /// 
+        /// Takes a number of random samples and tries to equalise the overall height of the ground-water stack by moving water around.
+        /// If water is moving, it also erodes.
+        /// 
+        /// Single threaded initially
+        /// </summary>
+        /// <param name="numsamples"></param>
+        public void RunWaterRandom(int numsamples)
+        {
+            Random rand = new Random();
+            int terrainSize = this.Width * this.Height;
+
+            // generate the water map
+            this.WaterMapSize = 0;
+            for (int i = 0; i < terrainSize; i++)
+            {
+                if (this.Map[i].Water > 0.001f)
+                {
+                    this.WaterMap[this.WaterMapSize++] = i;
+                }
+            }
+
+            //Func<int, float, float> LowestNeighbour = (i, h) => this.Map[i].Height < h ? this.Map[i].Height : h;
+            Func<int, Tuple<int, float>, Tuple<int, float>> LowestNeighbour = (i, h) => this.Map[i].Height < h.Item2 ? new Tuple<int, float>(i, this.Map[i].Height) : h;
+
+            for (int i = 0; i < numsamples; i++)
+            {
+
+                // pick a random point
+                //int celli = rand.Next(terrainSize);
+                int celli = this.WaterMap[rand.Next(this.WaterMapSize)];
+                int cellx = CX(celli);
+                int celly = CY(celli);
+
+                float water = this.Map[celli].Water;
+
+                // if we have no water, skip.
+                if (water < 0.000001f)
+                {
+                    continue;
+                }
+
+                // get our stack height
+                float h = this.Map[celli].Height;
+
+                // We have water. Find our lowest neighbour (hole detection)
+                Tuple<int, float> lowestNeighbour = new Tuple<int, float>(C(cellx - 1, celly), this.Map[C(cellx - 1, celly)].Height);
+                lowestNeighbour = LowestNeighbour(C(cellx + 1, celly), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx, celly - 1), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx, celly + 1), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx - 1, celly - 1), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx - 1, celly + 1), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx + 1, celly - 1), lowestNeighbour);
+                lowestNeighbour = LowestNeighbour(C(cellx + 1, celly + 1), lowestNeighbour);
+
+                // bail out if we're in a hole
+                if (lowestNeighbour.Item2 > h)
+                {
+                    continue;
+                }
+
+                // otherwise we are going to try to move water from our cell to our lowest neighbour
+                int cellni = lowestNeighbour.Item1;
+                float nh = lowestNeighbour.Item2;
+
+                float diff = (h - nh) * 0.5f;  // amount we want to move to equalise heights;
+
+                float amountToMove = (diff < water) ? diff : water;   // we can only move as much as we have
+
+
+                // do some erosion
+                float groundFrom = this.Map[celli].GroundLevel;
+                float groundTo = this.Map[cellni].GroundLevel;
+
+                float groundToMove = amountToMove * 0.25f;          
+
+                // if the underlying ground is downhill, move some loose material.
+                if (groundFrom > groundTo)
+                {
+                    diff = (groundFrom - groundTo) * 0.8f;
+                    if (groundToMove > diff)
+                    {
+                        groundToMove = diff;
+                    }
+
+                    float looseAvailable = this.Map[celli].Loose;
+
+                    if (looseAvailable > 0.0001f)
+                    {
+                        if (groundToMove > looseAvailable)
+                        {
+                            groundToMove = looseAvailable;
+                        }
+                        // erode loose material.
+                        this.ErosionMap[celli].Loose -= groundToMove;
+                        this.ErosionMap[cellni].Loose += groundToMove;
+                    }
+                    else
+                    {
+                        groundToMove *= 0.2f; // erode hard slower.
+
+                        // erode hard material
+                        this.ErosionMap[celli].Hard -= groundToMove;
+                        this.ErosionMap[cellni].Loose += groundToMove;
+                    }
+
+                    // recalculate the amount of water we're moving to compensate for the erosion
+                    //diff -= groundToMove;
+                    //amountToMove = (diff < water) ? diff : water;   // we can only move as much as we have
+                }
+
+                // move the water
+                this.Map[celli].Water -= amountToMove;
+                this.Map[cellni].Water += amountToMove;
+
+
+
+            }
         }
 
 

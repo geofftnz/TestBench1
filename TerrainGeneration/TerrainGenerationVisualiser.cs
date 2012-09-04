@@ -420,7 +420,7 @@ namespace TerrainGeneration
             ParallelHelper.For2D(this.tile.Width, this.tile.Height, (x, y, i) =>
             {
                 this.shadeTexData[i].R = (byte)((this.Terrain.Map[i].Loose * 4.0f).ClampInclusive(0.0f, 255.0f));  // loose depth
-                this.shadeTexData[i].G = (byte)((this.Terrain.Map[i].Water * 1024.0f).ClampInclusive(0.0f, 255.0f));  // water depth
+                this.shadeTexData[i].G = (byte)((this.Terrain.Map[i].Water * 16.0f).ClampInclusive(0.0f, 255.0f));  // water depth
                 this.shadeTexData[i].B = (byte)((this.Terrain.Map[i].DeltaHeight * 32f).ClampInclusive(-128.0f, 127.0f) + 128.0f);  // avg change in height 
                 this.shadeTexData[i].A = (byte)0; 
             });
