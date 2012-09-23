@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 
 namespace TerrainGeneration
 {
-    public class ErosionParticle
+    public class WindErosionParticle
     {
 
         /// <summary>
@@ -34,12 +34,12 @@ namespace TerrainGeneration
         public float CarryingAmount { get; set; }
 
 
-        public ErosionParticle()
+        public WindErosionParticle()
         {
 
         }
 
-        public ErosionParticle(int x, int y)
+        public WindErosionParticle(int x, int y)
         {
             this.Reset(x,y);
         }

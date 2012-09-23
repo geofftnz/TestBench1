@@ -127,7 +127,7 @@ namespace TerrainGeneration
         public Cell[] Map { get; private set; }
         private float[] TempDiffMap;
 
-        private List<WindErosionParticle> WaterParticles = new List<WindErosionParticle>();
+        private List<WaterErosionParticle> WaterParticles = new List<WaterErosionParticle>();
 
         public TerrainGen(int width, int height)
         {
@@ -182,7 +182,7 @@ namespace TerrainGeneration
 
             for (int i = 0; i < this.WaterNumParticles; i++)
             {
-                this.WaterParticles.Add(new WindErosionParticle(r.Next(this.Width), r.Next(this.Height)));
+                this.WaterParticles.Add(new WaterErosionParticle(r.Next(this.Width), r.Next(this.Height)));
             }
 
         }

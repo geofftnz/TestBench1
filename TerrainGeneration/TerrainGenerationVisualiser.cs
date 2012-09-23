@@ -32,10 +32,8 @@ namespace TerrainGeneration
                 {
                     case 1:
                         return this.Terrain;
-                        break;
                     case 2:
                         return this.TerrainPass2;
-                        break;
                     default:
                         throw new Exception("Invalid terrain pass.");
                 }
