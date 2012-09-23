@@ -273,7 +273,7 @@ float3 GetNormal(float2 p)
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
 
-float GetSmoothNormal(float2 p)
+float3 GetSmoothNormal(float2 p)
 {
 	float t = texel * 0.5;
 	float h1 = SampleSmoothHeight(float2(p.x,p.y-t));
@@ -284,7 +284,7 @@ float GetSmoothNormal(float2 p)
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
 
-float GetSmoothNormal2(float h1,float h2,float h3,float h4)
+float3 GetSmoothNormal2(float h1,float h2,float h3,float h4)
 {
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
