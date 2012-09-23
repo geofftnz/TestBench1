@@ -142,18 +142,18 @@ namespace TerrainGeneration
             // Slump loose slopes - general case
             this.TerrainSlumpMaxHeightDifference = 1.0f;
             this.TerrainSlumpMovementAmount = 0.05f;
-            this.TerrainSlumpSamplesPerFrame = 50000;
+            this.TerrainSlumpSamplesPerFrame = 40000;
 
             // Slump loose slopes - rare case
-            this.TerrainSlump2MaxHeightDifference = 1.0f;
-            this.TerrainSlump2MovementAmount = 0.05f;
-            this.TerrainSlump2SamplesPerFrame = 2000;
+            this.TerrainSlump2MaxHeightDifference = 0.5f;
+            this.TerrainSlump2MovementAmount = 0.02f;
+            this.TerrainSlump2SamplesPerFrame = 1000;
 
             // Collapse hard material - rare - used to simulate rockfall in slot canyons and cliffs
             this.TerrainCollapseMaxHeightDifference = 3.0f;
-            this.TerrainCollapseMovementAmount = 0.05f;
+            this.TerrainCollapseMovementAmount = 0.08f;
             this.TerrainCollapseLooseThreshold = 1f;
-            this.TerrainCollapseSamplesPerFrame = 2000;
+            this.TerrainCollapseSamplesPerFrame = 500;
 
             // Water erosion
             this.WaterNumParticles = 20000;  // 4000
@@ -899,9 +899,9 @@ namespace TerrainGeneration
                 int se = C(x + 1, y + 1);
 
                 float h = this.Map[p].Hard + this.Map[p].Loose;
-                float a = (amount * (this.Map[p].MovingWater * 200.0f + 0.2f)).ClampInclusive(0.005f, 0.1f);  // slump more where there is more water
+                float a = (amount * (this.Map[p].MovingWater * 50.0f + 0.2f)).ClampInclusive(0.005f, 0.1f);  // slump more where there is more water
 
-                float th = _threshold / (1f + this.Map[p].MovingWater * 200f);
+                float th = _threshold / (1f + this.Map[p].MovingWater * 50f);
                 float th2 = th * 1.414f;
 
                 h += SlumpF(n, p, h, a, th, diffmap);
