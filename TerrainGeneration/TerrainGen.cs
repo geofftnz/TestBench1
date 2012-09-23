@@ -156,8 +156,8 @@ namespace TerrainGeneration
             this.TerrainCollapseSamplesPerFrame = 2000;
 
             // Water erosion
-            this.WaterNumParticles = 4000;
-            this.WaterIterationsPerFrame = 20;
+            this.WaterNumParticles = 20000;  // 4000
+            this.WaterIterationsPerFrame = 5;  // 20
             this.WaterCarryingAmountDecayPerRun = 1.2f;
             this.WaterDepositWaterCollapseAmount = 0.01f;  // 0.05
             this.WaterCarryingCapacitySpeedCoefficient = 3.0f;  // 10
