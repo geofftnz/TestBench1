@@ -273,7 +273,7 @@ float3 GetNormal(float2 p)
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
 
-float GetSmoothNormal(float2 p)
+float3 GetSmoothNormal(float2 p)
 {
 	float t = texel * 0.5;
 	float h1 = SampleSmoothHeight(float2(p.x,p.y-t));
@@ -284,7 +284,7 @@ float GetSmoothNormal(float2 p)
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
 
-float GetSmoothNormal2(float h1,float h2,float h3,float h4)
+float3 GetSmoothNormal2(float h1,float h2,float h3,float h4)
 {
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
 }
@@ -331,6 +331,28 @@ float4 GenerateCol(float3 p)
 
 	return col;
 }
+
+/*
+float4 GenerateCol(float3 p)
+{
+	// calculate diffuse lighting
+	float nt = texel * 0.5;
+	float h1 = SampleSmoothHeight(float2(p.x,p.y-nt));
+	float h2 = SampleSmoothHeight(float2(p.x,p.y+nt));
+	float h3 = SampleSmoothHeight(float2(p.x-nt,p.y));
+	float h4 = SampleSmoothHeight(float2(p.x+nt,p.y));
+	float3 n = GetSmoothNormal2(h1,h2,h3,h4);
+	//float3 n = GetNormal(p);
+	//float diffuse = clamp(dot(n,LightDir) * 0.5 + 0.5,0,1);
+
+	float4 s = tex2D(ShadeTexSampler,p.xy);
+	float h = SampleHeight(p.xy);
+
+	return float4(n.xyz * 0.5f + float3(0.5,0.5,0.5),1.0f);
+	//return float4(s.rgb,1.0f);
+	//return float4(n,1.0f);
+}
+*/
 
 // raycast with function call to intersect
 PixelToFrame PSRaycastTile(VertexShaderOutput input) 

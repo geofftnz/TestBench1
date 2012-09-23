@@ -82,6 +82,7 @@ namespace TerrainGeneration
         private float[] MaxCellDrop;
         private int[] WaterMap;
         private int WaterMapSize;
+        private Vector3[] FallMap;
 
         public TerrainGenWater2(int width, int height)
         {
@@ -94,6 +95,7 @@ namespace TerrainGeneration
             this.MaxCellDrop = new float[this.Width * this.Height];
             this.WaterMap = new int[this.Width * this.Height];
             this.WaterMapSize = 0;
+            this.FallMap = new Vector3[this.Width * this.Height];
 
             this.Iterations = 0;
             this.AtmosphericWater = Parameters.TotalWaterBudget;
@@ -152,6 +154,11 @@ namespace TerrainGeneration
             //this.RunWater();
             this.RunWaterRandom(50000);
 
+            //this.RunWaterFast();
+            //this.RunWaterSlow();
+
+            //this.RunWater2();
+
             //this.RunWater2(this.WaterIterationsPerFrame);
             //this.Slump(this.TerrainSlumpMaxHeightDifference, this.TerrainSlumpMovementAmount, this.TerrainSlumpSamplesPerFrame);
             //this.Slump(this.TerrainSlump2MaxHeightDifference, this.TerrainSlump2MovementAmount, this.TerrainSlump2SamplesPerFrame);
@@ -160,6 +167,81 @@ namespace TerrainGeneration
             this.Iterations++;
         }
 
+        private void RunWater2()
+        {
+            // generate fall map (slow - OpenCL this)
+            ParallelHelper.For2D(this.Width, this.Height, (x, y, i) =>
+            {
+                this.FallMap[i] = FallVector(x, y);
+            });
+
+            int[] octantx = new int[8] { -1, -1, 0, 1, 1, 1, 0, -1 };
+            int[] octanty = new int[8] { 0, -1, -1, -1, 0, 1, 1, 1 };
+
+            // clear water destination map
+            Array.Clear(this.TempDiffMap, 0, this.Width * this.Height);
+
+            for (int celly = 0; celly < this.Height; celly++)
+            {
+                for (int cellx = 0; cellx < this.Width; cellx++)
+                {
+                    // get our current cell
+                    int celli = C(cellx, celly);
+                    var cell = this.Map[celli];
+
+                    // bailout if no water here.
+                    if (cell.Water < 0.00001f)
+                    {
+                        continue;
+                    }
+
+                    Vector3 fall = this.FallMap[celli];
+                    
+                   
+
+
+
+                    //// calculate angle of fall vector
+                    //float angle = ((float)((Math.Atan2(fall.Y, fall.X) + Math.PI) / Math.PI) + 0.125f) * 4f;
+                    //int octant = (((int)angle)+8) & 0x03;
+                    //float octantfrac = angle - (float)octant;
+
+                    //// octant we're in
+                    //int cellni = C(cellx + octantx[octant], celly + octanty[octant]);
+
+                    //float waterToMove = cell.Water * 0.1f;
+
+                    //this.TempDiffMap[cellni] += waterToMove;
+                    //this.TempDiffMap[celli] -= waterToMove;
+                }
+            }
+
+            ParallelHelper.For2D(this.Width, this.Height, (i) =>
+            {
+                this.Map[i].Water += this.TempDiffMap[i];
+            });
+        }
+
+
+        private Vector3 FallVector(int cx, int cy)
+        {
+            float h3 = this.Map[C(cx - 1, cy)].Height;
+            float h0 = this.Map[C(cx, cy)].Height;
+            float h4 = this.Map[C(cx + 1, cy)].Height;
+            float h1 = this.Map[C(cx, cy - 1)].Height;
+            float h2 = this.Map[C(cx, cy + 1)].Height;
+
+            Vector3 f = new Vector3(0.0f);
+
+            f += (new Vector3(0, -1, h1 - h0) * (h0 - h1));
+            f += (new Vector3(0, 1, h2 - h0) * (h0 - h2));
+            f += (new Vector3(-1, 0, h3 - h0) * (h0 - h3));
+            f += (new Vector3(1, 0, h4 - h0) * (h0 - h4));
+
+            f.Normalize();
+
+            return f;
+        }
 
         public void Clear(float height)
         {
@@ -219,6 +301,188 @@ namespace TerrainGeneration
         }
 
 
+        /// <summary>
+        /// Run fast-flow water movement.
+        /// 
+        /// Runs where the ground level of a cell is higher than the water height of its lowest neighbour.
+        /// Moves all water from one cell to the other.
+        /// Erodes material proportional to amount of water and slope.
+        /// </summary>
+        public void RunWaterFast()
+        {
+            Func<int, Tuple<int, float>, Tuple<int, float>> LowestNeighbour = (i, h) => this.Map[i].Height < h.Item2 ? new Tuple<int, float>(i, this.Map[i].Height) : h;
+
+            this.ClearTempDiffMap();
+
+            for (int celly = 0; celly < this.Height; celly++)
+            {
+                for (int cellx = 0; cellx < this.Width; cellx++)
+                {
+                    // get our current cell
+                    int celli = C(cellx, celly);
+                    var cell = this.Map[celli];
+
+                    // bailout if no water here.
+                    if (cell.Water < 0.00001f)
+                    {
+                        continue;
+                    }
+
+                    // get our stack height
+                    float h = cell.Height;
+
+                    // We have water. Find our lowest neighbour (hole detection)
+                    Tuple<int, float> lowestNeighbour = new Tuple<int, float>(C(cellx - 1, celly), this.Map[C(cellx - 1, celly)].Height);
+                    lowestNeighbour = LowestNeighbour(C(cellx + 1, celly), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx, celly - 1), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx, celly + 1), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx - 1, celly - 1), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx - 1, celly + 1), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx + 1, celly - 1), lowestNeighbour);
+                    lowestNeighbour = LowestNeighbour(C(cellx + 1, celly + 1), lowestNeighbour);
+
+                    // bail out if our ground level isn't higher than our lowest neighbour's water height
+                    if (lowestNeighbour.Item2 > cell.GroundLevel)
+                    {
+                        continue;
+                    }
+
+                    // otherwise we are going to try to move water from our cell to our lowest neighbour
+                    int cellni = lowestNeighbour.Item1;
+                    float nh = lowestNeighbour.Item2;
+
+                    // we're going to move all our water
+                    this.TempDiffMap[celli] -= cell.Water;
+                    this.TempDiffMap[cellni] += cell.Water;
+                }
+            }
+
+            ParallelHelper.For2D(this.Width, this.Height, (i) =>
+            {
+                this.Map[i].Water += this.TempDiffMap[i];
+            });
+
+        }
+
+
+        public IEnumerable<int> AllNeighbours(int x, int y)
+        {
+            yield return C(x - 1, y - 1);
+            yield return C(x, y - 1);
+            yield return C(x + 1, y - 1);
+
+            yield return C(x - 1, y);
+            yield return C(x + 1, y);
+
+            yield return C(x - 1, y + 1);
+            yield return C(x, y + 1);
+            yield return C(x + 1, y + 1);
+        }
+        /// <summary>
+        /// Run slow-flow water movement.
+        /// 
+        /// Seeks to equalise water height where the water level is higher than the lowest neighbour and the ground level is lower than the water height of the lowest neighbour.
+        /// Distributes excess equally to all lower neighbours.
+        /// Does not erode.
+        /// </summary>
+        public void RunWaterSlow()
+        {
+            Func<int, Tuple<int, float>, Tuple<int, float>> LowestNeighbour = (i, h) => this.Map[i].Height < h.Item2 ? new Tuple<int, float>(i, this.Map[i].Height) : h;
+
+            this.ClearTempDiffMap();
+            int[] lowerNeighbourIndex = new int[8];
+            //float[] lowerNeighbourDiff = new float[8];
+            int lowerNeighbours = 0;
+            float lowestNeighbour = 0f;
+            //float totalDiff = 0f;
+
+            Action<int, int, float> CheckNeighbour = (x, y, h) =>
+            {
+                int i = C(x, y);
+                float nh = this.Map[i].Height;
+                if (nh < h)
+                {
+                    //totalDiff += h - nh;
+                    lowerNeighbourIndex[lowerNeighbours] = i;
+                    //lowerNeighbourDiff[lowerNeighbours] = h - nh;
+
+                    lowerNeighbours++;
+                    if (nh < lowestNeighbour)
+                    {
+                        lowestNeighbour = nh;
+                    }
+                }
+            };
+
+            for (int celly = 0; celly < this.Height; celly++)
+            {
+                for (int cellx = 0; cellx < this.Width; cellx++)
+                {
+                    // get our current cell
+                    int celli = C(cellx, celly);
+                    var cell = this.Map[celli];
+
+                    // bailout if no water here.
+                    if (cell.Water < 0.00001f)
+                    {
+                        continue;
+                    }
+
+                    // get our stack height
+                    float h = cell.Height;
+
+                    // count our lower neighbours
+                    //int lowerNeighbours = this.AllNeighbours(cellx,celly).Where(i => this.Map[i].Height < h).Count();
+                    lowerNeighbours = 0;
+                    //totalDiff = 0f;
+
+                    CheckNeighbour(cellx - 1, celly - 1, h);
+                    CheckNeighbour(cellx, celly - 1, h);
+                    CheckNeighbour(cellx + 1, celly - 1, h);
+
+                    CheckNeighbour(cellx - 1, celly, h);
+                    CheckNeighbour(cellx + 1, celly, h);
+
+                    CheckNeighbour(cellx - 1, celly + 1, h);
+                    CheckNeighbour(cellx, celly + 1, h);
+                    CheckNeighbour(cellx + 1, celly + 1, h);
+
+
+                    // bailout if we're in a hole
+                    if (lowerNeighbours == 0)
+                    {
+                        continue;
+                    }
+
+                    // find our lowest neighbour
+                    //float lowestNeighbour = this.AllNeighbours(cellx, celly).Select(i => this.Map[i].Height).Min();
+
+                    float diff = h - lowestNeighbour;
+                    if (diff > cell.Water) diff = cell.Water;  // total amount of water we can move.
+                    diff *= 0.1f;  // dampen
+
+                    float waterToDistribute = diff / (float)(lowerNeighbours + 1);  // distribute equally to neighbours.
+
+                    this.TempDiffMap[celli] += (waterToDistribute - diff);
+
+                    //foreach (var i in this.AllNeighbours(cellx, celly).Where(i => this.Map[i].Height < h))
+                    //{
+                    //this.TempDiffMap[i] += waterToDistribute;
+                    //}
+                    //totalDiff = 1.0f / totalDiff;
+                    for (int i = 0; i < lowerNeighbours; i++)
+                    {
+                        this.TempDiffMap[lowerNeighbourIndex[i]] += waterToDistribute; //diff * lowerNeighbourDiff[i] * totalDiff;
+                    }
+
+                }
+            }
+
+            ParallelHelper.For2D(this.Width, this.Height, (i) =>
+            {
+                this.Map[i].Water += this.TempDiffMap[i];
+            });
+        }
 
         /// <summary>
         /// A stochastic water flow algorithm.
@@ -238,7 +502,7 @@ namespace TerrainGeneration
             this.WaterMapSize = 0;
             for (int i = 0; i < terrainSize; i++)
             {
-                if (this.Map[i].Water > 0.001f)
+                if (this.Map[i].Water > 0.0001f)
                 {
                     this.WaterMap[this.WaterMapSize++] = i;
                 }
@@ -296,7 +560,7 @@ namespace TerrainGeneration
                 float groundFrom = this.Map[celli].GroundLevel;
                 float groundTo = this.Map[cellni].GroundLevel;
 
-                float groundToMove = amountToMove * 0.25f;          
+                float groundToMove = amountToMove * 0.25f;
 
                 // if the underlying ground is downhill, move some loose material.
                 if (groundFrom > groundTo)
