@@ -188,13 +188,6 @@ float4 IntersectRayHeightMap(float3 rayPos, float3 rayDir)
 			if (level < 1)  // at actual intersection
 			{
 				p.w = 0.61f + n;
-
-				// if we've hit well below the point, discard. This effectively sets a max slope, so use with caution.
-				//if (height - p.y > 0.02f)
-				//{
-				//	p.w = 0.55f;
-				//}
-
 			}
 			else // still walking through the mipmaps
 			{
@@ -218,32 +211,6 @@ float4 IntersectRayHeightMap(float3 rayPos, float3 rayDir)
 
 }
 
-/*
-float3 CalculateNormal(float3 p)
-{
-	// Grab the samples on either side of the current one.
-	// If we're at an edge, then use the current location in place of the off-edge samples.
-
-	float2 q = float2(floor(p.x*TEXDIM)/TEXDIM,floor(p.z*TEXDIM)/TEXDIM);
-	float qf = 1.0f/TEXDIM;
-	// north/south/west/east points
-	float h;
-
-	h = tex2Dlod(HeightTexSampler, float4(q.x,q.y-qf,0,0));
-	float3 n = float3(q.x, h, q.y-qf);
-
-	h = tex2Dlod(HeightTexSampler, float4(q.x,q.y+qf,0,0));
-	float3 s = float3(q.x, h, q.y+qf);
-
-	h=tex2Dlod(HeightTexSampler, float4(q.x-qf,q.y,0,0));
-	float3 w = float3(q.x-qf,h , q.y);
-
-	h = tex2Dlod(HeightTexSampler, float4(q.x+qf,q.y,0,0));
-	float3 e = float3(q.x+qf, h, q.y);
-	
-	return normalize(cross(e-w,s-n));
-}*/
-
 float texel = 0.0009765625f;
 float SampleHeight(float2 p)
 {
@@ -262,7 +229,7 @@ float SampleSmoothHeight(float2 p)
 
 	return lerp(lerp(h00,h10,pf.x),lerp(h01,h11,pf.x),pf.y) * 4;
 }
-
+/*
 float3 GetNormal(float2 p)
 {
 	float h1 = SampleHeight(float2(p.x,p.y-texel));
@@ -282,7 +249,7 @@ float3 GetSmoothNormal(float2 p)
 	float h4 = SampleSmoothHeight(float2(p.x+t,p.y));
 
 	return normalize(float3(h4-h3,h2-h1,2.0*texel));
-}
+}*/
 
 float3 GetSmoothNormal2(float h1,float h2,float h3,float h4)
 {
@@ -300,7 +267,7 @@ float contour(float h0, float h1,float h2, float h3, float h4, float contourscal
 
 	return (b0>b1 || b0>b2 || b0>b3 || b0>b4) ? 1.0:0.0;
 }
-
+/*
 float4 DebugColTexelFrac(float3 p)
 {
 	float2 p0 = float2( floor(p.x/texel)*texel , floor(p.y/texel)*texel );
@@ -311,13 +278,8 @@ float4 DebugColTexelFrac(float3 p)
 	float4 c01 = float4(0,1,0,1);
 	float4 c11 = float4(0,0,1,1);
 
-	//float4 c = lerp(c00,c10,pf.x);
-
-	//return lerp(float4(1,0,0,1),float4(0,0,1,1),pf.x);
-
-
 	return 	lerp(		lerp(c00,c10,pf.x),		lerp(c01,c11,pf.x),		pf.y);
-}
+}*/
 
 float4 GenerateCol(float3 p)
 {

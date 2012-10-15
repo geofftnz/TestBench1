@@ -136,7 +136,7 @@ namespace TerrainEngine
             Matrix texToViewMatrix = Matrix.Multiply(this.TileMatrix, Matrix.Multiply(viewMatrix, projectionMatrix));
 
             effect.Parameters["HeightTex"].SetValue(this.HeightTex);
-            effect.Parameters["ShadeTex"].SetValue(this.ShadeTex);
+            //effect.Parameters["ShadeTex"].SetValue(this.ShadeTex);
             effect.Parameters["Eye"].SetValue(eyePosTile);
             effect.Parameters["World"].SetValue(this.TileMatrix);
             effect.Parameters["View"].SetValue(viewMatrix);
@@ -162,7 +162,7 @@ namespace TerrainEngine
             Vector3 eyePosTile = Vector3.Transform(eyePos, this.InverseTileMatrix);
 
             effect.Parameters["HeightTex"].SetValue(this.HeightTex);
-            effect.Parameters["ShadeTex"].SetValue(this.ShadeTex);
+            //effect.Parameters["ShadeTex"].SetValue(this.ShadeTex);
             effect.Parameters["Eye"].SetValue(eyePosTile);
             effect.Parameters["World"].SetValue(this.TileMatrix);
             effect.Parameters["View"].SetValue(viewMatrix);

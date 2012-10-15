@@ -166,6 +166,8 @@ namespace TerrainGeneration
             }
             this.CalculateNormals();
 
+            // set wind particle heights & initial states
+
             // 3cm should be visible
             //this.AddPowder(0.05f, new Vector3(0f,0f,-1f));
         }
@@ -184,8 +186,14 @@ namespace TerrainGeneration
             this.CurrentWindVector.Z = -1f;
             this.CurrentWindVector.Normalize();
 
-            
-            this.AddPowder(this.CurrentSnowFallRate, this.CurrentWindVector);
+            if (this.CurrentSnowFallRate > 0.000001f)
+            {
+                this.AddPowder(this.CurrentSnowFallRate, this.CurrentWindVector);
+            }
+
+
+
+
 
             switch (this.Iterations % 2)
             {
@@ -193,14 +201,9 @@ namespace TerrainGeneration
                     this.SlumpPowder(0.78f, 0.0f, 0.05f);// repose angle means 0.78 slope, 0cm min depth, slump 5%
                     break;
                 case 1:
-                    this.CompactPowder(0.1f, 0.01f, 0.5f);
+                    this.CompactPowder(0.5f, 0.01f, 0.5f);
                     break;
             }
-
-
-            //this.AddPowder(50000,0.2f);
-            //this.SlumpPowder(25000, 0.78f, 0.01f, 0.1f);
-            //this.CompactPowder(25000, 0.5f, 0.05f, 0.5f);
 
 
             Iterations++;
@@ -245,7 +248,7 @@ namespace TerrainGeneration
             a1 *= amount;
 
             direction = -direction;
-            ParallelHelper.For2D(this.Width, this.Height, (x, y, i) =>
+            ParallelHelper.For2D(this.Width, this.Height, (i) =>
             {
                 this.Map[i].Powder += a0 + a1 * Vector3.Dot(direction, this.MapNormals[i]).ClampInclusive(0f, 1f);
             });

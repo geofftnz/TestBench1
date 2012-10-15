@@ -13,44 +13,51 @@ namespace TerrainGeneration
         /// Position of the particle on the heightfield
         /// </summary>
         //public Vector2 Position { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
+        public Vector2 Position;
 
-        
+        /// <summary>
+        /// Height of particle. This should always be above the surface of the ground.
+        /// As a particle is forced upwards, it increases in velocity.
+        /// Particle height decays exponentially and velocity with it.
+        /// </summary>
+        public float Height;  
+
         /// <summary>
         /// Velocity of material in particle, not velocity of particle across terrain.
         /// </summary>
-        public float Velocity { get; set; }
+        public float Velocity;
 
         /// <summary>
         /// Amount of material this particle can currently carry.
         /// Depends on velocity.
         /// </summary>
-        public float CarryingCapacity { get; set; }
+        public float CarryingCapacity;
 
         /// <summary>
         /// Amount of material this particle is carrying.
         /// </summary>
-        public float CarryingAmount { get; set; }
+        public float CarryingAmount;
 
 
         public WindErosionParticle()
         {
-
+            this.Position = new Vector2(0f);
         }
 
         public WindErosionParticle(int x, int y)
+            : this()
         {
-            this.Reset(x,y);
+            this.Reset(x, y);
         }
 
         public virtual void Reset(int x, int y)
         {
-            this.X = x;
-            this.Y = y;
+            this.Position.X = (float)x + 0.5f;
+            this.Position.Y = (float)y + 0.5f;
             this.Velocity = 0.0f;
             this.CarryingAmount = 0.0f;
             this.CarryingCapacity = 0.0f;
+            this.Height = 0f;
         }
 
         /// <summary>

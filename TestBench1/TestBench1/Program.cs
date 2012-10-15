@@ -15,6 +15,7 @@ namespace TestBench1
             //    game.Run();
             //}
             using (var game = new TerrainGeneration.TerrainGenerationVisualiser())
+            //using (var game = new Game1())
             {
                 game.Run();
             }
